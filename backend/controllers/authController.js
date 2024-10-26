@@ -10,9 +10,9 @@ exports.signup = async (req, res) => {
     const { email, password } = req.body;
 
     const collegeDomainRegex = /^[a-zA-Z0-9._%+-]+@ietdavv\.edu\.in$/;
-    if (!collegeDomainRegex.test(email)) 
+    if (!collegeDomainRegex.test(email))
         return res.status(400).json({ message: "Only emails from @ietdavv.edu.in are allowed to create an account" });
-    
+
     try {
         const checkUser = await pool.query("SELECT * FROM users WHERE institute_email = $1", [email]);
         if (checkUser.rows.length > 0)
@@ -89,11 +89,13 @@ exports.login = async (req, res) => {
 
         if (user.rows.length === 0) return res.status(400).json({ message: "No user found. Signup first." });
 
+        await pool.query("DELETE FROM otps WHERE email = $1", [email]);
+
         bcrypt.compare(password, user.rows[0].password, (err, result) => {
             if (err) return res.status(500).json({ message: "Error while comparing passwords" });
 
             if (result) {
-                const token = jwt.sign({ institute_email: user.rows[0].institute_email }, jwtKey);
+                const token = jwt.sign({ institute_email: user.rows[0].institute_email, role: user.rows[0].role }, jwtKey);
                 return res.status(200).json({ message: "Logged in successfully", token });
             } else {
                 return res.status(400).json({ message: "Wrong password" });
@@ -108,31 +110,32 @@ exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
     try {
         const user = await pool.query('SELECT * FROM users WHERE institute_email = $1', [email]);
+        
+        if (user.rows.length === 0) return res.status(400).json({ message: "No user found. Signup first." });
 
-        if (user.rows.length > 0) {
-            const otpGenerated = Math.floor(100000 + Math.random() * 900000);
-            const expiry = new Date(Date.now() + 10 * 60 * 1000);
-            const otp = otpGenerated.toString();
+        await pool.query("DELETE FROM otps WHERE email = $1", [email]);
 
-            bcrypt.hash(otp, saltRounds, async (err, otpHash) => {
-                if (err) return res.status(500).json({ message: "Error while hashing OTP" });
+        const otpGenerated = Math.floor(100000 + Math.random() * 900000);
+        const expiry = new Date(Date.now() + 10 * 60 * 1000);
+        const otp = otpGenerated.toString();
 
-                await pool.query('INSERT INTO otps (email, otp, expires_at, password) VALUES ($1, $2, $3, $4)', [email, otpHash, expiry, ''])
-                const mailOptions = {
-                    from: process.env.EMAIL,
-                    to: email,
-                    subject: "CampusRecruit: Account Verification",
-                    text: `Your code to verify account is ${otpGenerated}. It is valid till ${expiry}.`,
-                };
+        bcrypt.hash(otp, saltRounds, async (err, otpHash) => {
+            if (err) return res.status(500).json({ message: "Error while hashing OTP" });
 
-                transporter.sendMail(mailOptions, (error, info) => {
-                    if (error) return res.status(500).json({ message: "Failed to send OTP email" });
-                    return res.status(200).json({ message: "OTP sent to your email. Please verify." });
-                });
+            await pool.query('INSERT INTO otps (email, otp, expires_at, password) VALUES ($1, $2, $3, $4)', [email, otpHash, expiry, ''])
+            const mailOptions = {
+                from: process.env.EMAIL,
+                to: email,
+                subject: "CampusRecruit: Account Verification",
+                text: `Your code to verify account is ${otpGenerated}. It is valid till ${expiry}.`,
+            };
+
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) return res.status(500).json({ message: "Failed to send OTP email" });
+                return res.status(200).json({ message: "OTP sent to your email. Please verify." });
             });
-        } else {
-            return res.status(400).json({ message: "No user found. Signup first." });
-        }
+        });
+
     } catch (error) {
         return res.status(500).json({ message: "Server error" });
     }
@@ -140,7 +143,7 @@ exports.forgotPassword = async (req, res) => {
 
 exports.newPassword = async (req, res) => {
     const { new_password } = req.body;
-    const {institute_email} = req.user;
+    const { institute_email } = req.user;
 
     try {
         bcrypt.hash(new_password, saltRounds, async (err, passwordHash) => {
@@ -155,17 +158,17 @@ exports.newPassword = async (req, res) => {
     }
 };
 
-exports.changePassword = async(req,res) => {
-    const {curr_password, new_password} = req.body;
-    const {institute_email} = req.user;
+exports.changePassword = async (req, res) => {
+    const { curr_password, new_password } = req.body;
+    const { institute_email } = req.user;
 
     const resultSet = await pool.query("SELECT * from users WHERE institute_email = $1", [institute_email]);
     const user = resultSet.rows[0];
 
     bcrypt.compare(curr_password, user.password, (err, result) => {
-        if(err) return res.status(500).json({ message: "Error while comparing passwords" });
-        if(!result) return res.status(400).json({ message: "Wrong Password" });
-        
+        if (err) return res.status(500).json({ message: "Error while comparing passwords" });
+        if (!result) return res.status(400).json({ message: "Wrong Password" });
+
         bcrypt.hash(new_password, saltRounds, async (err, passwordHash) => {
             if (err) return res.status(500).json({ message: "Error while hashing new password" });
 
