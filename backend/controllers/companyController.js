@@ -3,7 +3,6 @@ const moment = require('moment');
 const { uploadToS3, uploadExcel } = require('../utilities/s3Upload');
 const toSnakeCase = require('../utilities/snakeCasing');
 const xlsx = require('xlsx');
-// const path = require('path');
 
 exports.allCompanies = async (req, res) => {
     try {
@@ -32,7 +31,6 @@ exports.addCompany = async (req, res) => {
                 const fileUrl = await uploadToS3(file, company_name, role_name);
                 docsUrls.push(fileUrl);
             } catch (err) {
-                console.error("Error uploading file to S3:", err);
                 return res.status(500).json({ message: "Error uploading files" });
             }
         }
@@ -40,10 +38,8 @@ exports.addCompany = async (req, res) => {
         values.push(docsUrls);
     }
 
-    if (fields.length === 0) {
-        return res.status(400).json({ message: "No valid fields provided." });
-    }
-
+    if (fields.length === 0) return res.status(400).json({ message: "No valid fields provided." });
+    
     try {
         const columns = fields.join(", ");
         const placeholders = fields.map((_, index) => `$${index + 1}`).join(", ");
@@ -56,16 +52,14 @@ exports.addCompany = async (req, res) => {
             values[deadlineIndex] = formattedDeadline;
         }
 
+        await pool.query(`INSERT INTO companies (${columns}) VALUES (${placeholders}) RETURNING *`, values);
 
-        const company = await pool.query(`INSERT INTO companies (${columns}) VALUES (${placeholders}) RETURNING *`, values);
-        const companyName = company.rows[0].company_name;
-
-        const resultSet = await pool.query(`SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_schema ='public' AND table_name = $1)`, [companyName]);
+        const resultSet = await pool.query(`SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_schema ='public' AND table_name = $1)`, [company_name]);
         if (resultSet.rows[0].exists) {
             return res.status(200).json({ message: "Company listed and company table already exists" });
         }
 
-        await pool.query(`CREATE TABLE ${companyName} (
+        await pool.query(`CREATE TABLE ${company_name} (
             enrollment_no VARCHAR(10),
             role TEXT,
             resume TEXT,
@@ -84,19 +78,15 @@ exports.addCompany = async (req, res) => {
 exports.apply = async (req, res) => {
     const { institute_email } = req.user;
 
-    if (!req.file) {
-        return res.status(400).json({ message: "Please upload a PDF resume file." });
-    }
+    if (!req.file) return res.status(400).json({ message: "Please upload a PDF resume file." });
 
     try {
         const resultSet = await pool.query(`SELECT profile_id FROM users WHERE institute_email = $1`, [institute_email]);
         const enrollment_no = resultSet.rows[0].profile_id;
 
-        const companyName = toSnakeCase(req.body.company_name);
-        const resumeUrl = await uploadToS3(req.file, companyName, 'applications');
-        await pool.query(`INSERT INTO ${companyName} (enrollment_no, role, resume) VALUES ($1, $2, $3)`,
-            [enrollment_no, req.body.role, resumeUrl]
-        );
+        const company_name = toSnakeCase(req.body.company_name);
+        const resumeUrl = await uploadToS3(req.file, company_name, 'applications');
+        await pool.query(`INSERT INTO ${company_name} (enrollment_no, role, resume) VALUES ($1, $2, $3)`,[enrollment_no, req.body.role, resumeUrl]);
 
         return res.status(201).json({ message: "Application submitted successfully." });
 
@@ -106,12 +96,10 @@ exports.apply = async (req, res) => {
 }
 
 exports.exportData = async (req, res) => {
-    const { company_name } = req.body;
     const { role } = req.user;
+    const company_name = toSnakeCase(req.body.company_name);
 
-    if (role === 'student') {
-        return res.status(403).json({ message: "Access denied, coordinators and admins only" });
-    }
+    if (role === 'student') return res.status(403).json({ message: "Access denied, coordinators and admins only" });
 
     try {
         const resultSet = await pool.query(
@@ -122,9 +110,7 @@ exports.exportData = async (req, res) => {
         );
 
         const applications = resultSet.rows;
-        if (applications.length === 0) {
-            return res.status(404).json({ message: "No applications found for this company." });
-        }
+        if (applications.length === 0) return res.status(404).json({ message: "No applications found for this company." });
 
         const data = applications.map((app) => ({
             enrollment_no: app.enrollment_no,
@@ -170,7 +156,7 @@ exports.exportData = async (req, res) => {
 
         const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-        const fileName = `${toSnakeCase(company_name)}/${toSnakeCase(company_name)}_data.xlsx`;
+        const fileName = `${company_name}/${company_name}_data.xlsx`;
         const fileUrl = await uploadExcel(buffer, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
         await pool.query(`UPDATE companies SET data_file = $1 WHERE company_name = $2`, [fileUrl, company_name]);
@@ -178,7 +164,44 @@ exports.exportData = async (req, res) => {
         return res.status(200).json({ message: "Data exported successfully", fileUrl: fileUrl });
 
     } catch (err) {
-        console.log(err);
-        return res.status(500).json({ message: 'Error occurred while exporting data.' });
+        return res.status(500).json({ message: err });
+    }
+}
+
+exports.importData = async (req, res) => {
+    const { role } = req.user;
+    const file = req.file;
+    const company_name = toSnakeCase(req.body.company_name);
+
+    if (role === 'student') return res.status(403).json({ message: "Access denied, coordinators and admins only" });
+
+    if (!file) return res.status(400).json({ message: "No file uploaded." });
+
+    try {
+        const workbook = xlsx.read(file.buffer);
+        const sheetName = workbook.SheetNames[0];
+        const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        const enrollmentNumbers = data.map(row => row.enrollment_no);
+
+        const resultSet = await pool.query(`SELECT enrollment_no, status FROM ${company_name}`);
+        const applications = resultSet.rows;
+
+        const updates = [];
+        applications.forEach(app => {
+            if (enrollmentNumbers.includes(app.enrollment_no)) {
+                updates.push({ enrollment_no: app.enrollment_no, status: 'Shortlisted' });
+            } else {
+                updates.push({ enrollment_no: app.enrollment_no, status: 'Rejected' });
+            }
+        });
+
+        for (const update of updates) {
+            await pool.query(`UPDATE ${company_name} SET status = $1 WHERE enrollment_no = $2`, [update.status, update.enrollment_no]);
+        }
+
+        return res.status(200).json({ message: "Data imported and statuses updated successfully." });
+    } catch (error) {
+        return res.status(500).json({ message: err });
     }
 }

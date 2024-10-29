@@ -11,19 +11,33 @@ const pdfFilter = (req, file, cb) => {
     }
 }
 
-const resumeUpload = multer({
-    storage: storage,
-    limits: {fileSize: 2*1024*1024},
-    fileFilter: pdfFilter
-});
-
+const excelFilter = (req, file, cb) => {
+    const allowedTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel'
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only Excel files are allowed!'), false);
+    }
+}
 
 const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-module.exports = {
-    resumeUpload,
-    upload
-};
+const resumeUpload = multer({
+    storage: storage,
+    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter: pdfFilter
+});
+
+const excelUpload = multer({ 
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024}, 
+    fileFilter: excelFilter
+});
+
+module.exports = { upload, resumeUpload, excelUpload };
