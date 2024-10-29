@@ -25,4 +25,16 @@ const uploadToS3 = async (file, companyName, role) => {
     return data.Location;
 };
 
-module.exports = { uploadToS3 };
+const uploadExcel = async (buffer, fileName, contentType) => {
+    const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: fileName,
+        Body: buffer,
+        ContentType: contentType
+    };
+
+    const data = await s3.upload(params).promise();
+    return data.Location;
+};
+
+module.exports = { uploadToS3, uploadExcel };

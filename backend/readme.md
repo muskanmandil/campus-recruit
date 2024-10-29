@@ -56,7 +56,8 @@ CREATE TABLE companies (
     tenth_percentage NUMERIC(5,2) NOT NULL DEFAULT 60,                
     twelfth_percentage NUMERIC(5,2) NOT NULL DEFAULT 60,              
     diploma_cgpa NUMERIC(3,2) NOT NULL DEFAULT 6,                     
-    ug_cgpa NUMERIC(3,2) NOT NULL DEFAULT 6,                                                 
+    ug_cgpa NUMERIC(3,2) NOT NULL DEFAULT 6,
+    data_file TEXT,                                                 
     PRIMARY KEY (company_name, role)                                  
 );
 

@@ -1,8 +1,8 @@
 const pool = require('../config/db');
 const moment = require('moment');
-const { uploadToS3 } = require('../utilities/s3Upload');
+const { uploadToS3, uploadExcel } = require('../utilities/s3Upload');
 const toSnakeCase = require('../utilities/snakeCasing');
-// const xlsx = require('xlsx');
+const xlsx = require('xlsx');
 // const path = require('path');
 
 exports.allCompanies = async (req, res) => {
@@ -105,75 +105,80 @@ exports.apply = async (req, res) => {
     }
 }
 
-// exports.exportData = async (req, res) => {
-//     const { company_name } = req.body;
-//     const { role } = req.user;
+exports.exportData = async (req, res) => {
+    const { company_name } = req.body;
+    const { role } = req.user;
 
-//     if (role !== 'admin') {
-//         return res.status(403).json({ message: "Access denied, admins only" });
-//     }
+    if (role === 'student') {
+        return res.status(403).json({ message: "Access denied, coordinators and admins only" });
+    }
+
+    try {
+        const resultSet = await pool.query(
+            `SELECT st.*, c.role, c.resume, c.status, u.institute_email
+             FROM ${company_name} AS c
+             JOIN students AS st ON c.enrollment_no = st.enrollment_no
+             JOIN users AS u ON c.enrollment_no = u.profile_id`
+        );
+
+        const applications = resultSet.rows;
+        if (applications.length === 0) {
+            return res.status(404).json({ message: "No applications found for this company." });
+        }
+
+        const data = applications.map((app) => ({
+            enrollment_no: app.enrollment_no,
+            first_name: app.first_name,
+            last_name: app.last_name,
+            gender: app.gender,
+            college: app.college,
+            course: app.course,
+            branch: app.branch,
+            date_of_birth: app.date_of_birth,
+            year_of_passing: app.year_of_passing,
+            personal_email: `HYPERLINK("mailto:${app.personal_email}", "${app.personal_email}")`,
+            institute_email: `HYPERLINK("mailto:${app.institute_email}", "${app.institute_email}")`,
+            contact_no: app.contact_no,
+            tenth_percentage: app.tenth_percentage,
+            twelfth_percentage: app.twelfth_percentage,
+            diploma_cgpa: app.diploma_cgpa,
+            ug_cgpa: app.ug_cgpa,
+            total_backlogs: app.total_backlogs,
+            active_backlogs: app.active_backlogs,
+            role: app.role,
+            resume: `HYPERLINK("${app.resume}", "${app.resume}")`,
+            status: app.status
+        }));
 
 
-//     try {
-//         const resultSet = await pool.query(
-//             `SELECT st.*, c.role, c.resume, c.status
-//              FROM ${company_name} AS c
-//              JOIN students AS st ON c.enrollment_no = st.enrollment_no`
-//         );
+        const workbook = xlsx.utils.book_new();
+        const worksheet = xlsx.utils.json_to_sheet(data);
 
-//         const applications = resultSet.rows;
+        Object.keys(data).forEach((rowIdx) => {
+            if (data[rowIdx].personal_email) {
+                worksheet[`J${parseInt(rowIdx) + 2}`].f = data[rowIdx].personal_email;
+            }
+            if (data[rowIdx].institute_email) {
+                worksheet[`K${parseInt(rowIdx) + 2}`].f = data[rowIdx].institute_email;
+            }
+            if (data[rowIdx].resume) {
+                worksheet[`T${parseInt(rowIdx) + 2}`].f = data[rowIdx].resume;
+            }
+        });
 
-//         if (applications.length === 0) {
-//             return res.status(404).json({ message: "No applications found for this company." });
-//         }
+        xlsx.utils.book_append_sheet(workbook, worksheet, "Applications");
 
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-//         const data = applications.map((app) => ({
-//             Enrollment_No: app.enrollment_no,
-//             First_Name: app.first_name,
-//             Last_Name: app.last_name,
-//             Gender: app.gender,
-//             College: app.college,
-//             Course: app.course,
-//             Branch: app.branch,
-//             Date_of_Birth: app.date_of_birth,
-//             Year_of_Passing: app.year_of_passing,
-//             Personal_Email: app.personal_email,
-//             Contact_No: app.contact_no,
-//             Tenth_Percentage: app.tenth_percentage,
-//             Twelfth_Percentage: app.twelfth_percentage,
-//             Diploma_CGPA: app.diploma_cgpa,
-//             UG_CGPA: app.ug_cgpa,
-//             Total_Backlogs: app.total_backlogs,
-//             Active_Backlogs: app.active_backlogs,
-//             Role: app.role,
-//             Resume: app.resume,
-//             Status: app.status
-//         }));
+        const fileName = `${toSnakeCase(company_name)}/${toSnakeCase(company_name)}_data.xlsx`;
+        const fileUrl = await uploadExcel(buffer, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
+        await pool.query(`UPDATE companies SET data_file = $1 WHERE company_name = $2`, [fileUrl, company_name]);
 
-//         const workbook = xlsx.utils.book_new();
-//         const worksheet = xlsx.utils.json_to_sheet(data);
-//         xlsx.utils.book_append_sheet(workbook, worksheet, "Applications");
+        return res.status(200).json({ message: "Data exported successfully", fileUrl: fileUrl });
 
-//         const filePath = path.join(__dirname, `${company_name}_applications.xlsx`);
-//         xlsx.writeFile(workbook, filePath);
-
-//         res.download(filePath, `${company_name}_applications.xlsx`, (err) => {
-//             if (err) {
-//                 console.error("Error sending file:", err);
-//                 return res.status(500).json({ message: "Error downloading file." });
-//             }
-//             // Delete the file after sending it
-//             fs.unlink(filePath, (unlinkErr) => {
-//                 if (unlinkErr) {
-//                     console.error("Error deleting file:", unlinkErr);
-//                 }
-//             });
-//         });
-
-//     } catch (err) {
-//         console.log(err);
-//         return res.status(500).json({ message: 'Error occurred while exporting data.' });
-//     }
-// }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Error occurred while exporting data.' });
+    }
+}
