@@ -16,7 +16,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/company', companyRoutes);
-app.use('/api', studentRoutes);
+app.use('/api/student', studentRoutes);
 
 
 const port = 4000;

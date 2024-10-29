@@ -1,7 +1,7 @@
 const pool = require('../config/db')
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const transporter = require('../utlis/mailer');
+const transporter = require('../utilities/mailer');
 
 const jwtKey = process.env.JWT_KEY;
 const saltRounds = 10;
@@ -9,9 +9,9 @@ const saltRounds = 10;
 exports.signup = async (req, res) => {
     const { email, password } = req.body;
 
-    const collegeDomainRegex = /^[a-zA-Z0-9._%+-]+@ietdavv\.edu\.in$/;
-    if (!collegeDomainRegex.test(email))
-        return res.status(400).json({ message: "Only emails from @ietdavv.edu.in are allowed to create an account" });
+    // const collegeDomainRegex = /^[a-zA-Z0-9._%+-]+@ietdavv\.edu\.in$/;
+    // if (!collegeDomainRegex.test(email))
+    //     return res.status(400).json({ message: "Only emails from @ietdavv.edu.in are allowed to create an account" });
 
     try {
         const checkUser = await pool.query("SELECT * FROM users WHERE institute_email = $1", [email]);
@@ -46,7 +46,7 @@ exports.signup = async (req, res) => {
             });
         });
     } catch (err) {
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: err });
     }
 }
 
@@ -67,17 +67,17 @@ exports.verify = async (req, res) => {
             if (checkUser.rows.length > 0) {
                 const token = jwt.sign({ institute_email: checkUser.rows[0].institute_email }, jwtKey);
                 await pool.query("DELETE FROM otps WHERE email = $1", [email]);
-                return res.status(200).json({ message: "User has been verified successfully", token });
+                return res.status(200).json({ message: "User has been verified successfully", token, role: checkUser.rows[0].role });
             } else {
                 const newUser = await pool.query("INSERT INTO users (institute_email, password) VALUES ($1, $2) RETURNING institute_email", [email, otpRecord.password]);
                 const token = jwt.sign({ institute_email: newUser.rows[0].institute_email }, jwtKey);
                 await pool.query("DELETE FROM otps WHERE email = $1", [email]);
-                return res.status(200).json({ message: "User has been registered successfully", token });
+                return res.status(200).json({ message: "User has been registered successfully", token, role: 'student' });
             }
 
         });
     } catch (err) {
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: err });
     }
 }
 
@@ -96,13 +96,13 @@ exports.login = async (req, res) => {
 
             if (result) {
                 const token = jwt.sign({ institute_email: user.rows[0].institute_email, role: user.rows[0].role }, jwtKey);
-                return res.status(200).json({ message: "Logged in successfully", token });
+                return res.status(200).json({ message: "Logged in successfully", token, role: user.rows[0].role });
             } else {
                 return res.status(400).json({ message: "Wrong password" });
             }
         });
     } catch (err) {
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: err });
     }
 }
 
@@ -110,7 +110,7 @@ exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
     try {
         const user = await pool.query('SELECT * FROM users WHERE institute_email = $1', [email]);
-        
+
         if (user.rows.length === 0) return res.status(400).json({ message: "No user found. Signup first." });
 
         await pool.query("DELETE FROM otps WHERE email = $1", [email]);
@@ -137,7 +137,7 @@ exports.forgotPassword = async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: err });
     }
 }
 
@@ -154,7 +154,7 @@ exports.newPassword = async (req, res) => {
             return res.status(200).json({ message: "Password changed successfully" });
         });
     } catch (err) {
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: err });
     }
 };
 
@@ -165,15 +165,19 @@ exports.changePassword = async (req, res) => {
     const resultSet = await pool.query("SELECT * from users WHERE institute_email = $1", [institute_email]);
     const user = resultSet.rows[0];
 
-    bcrypt.compare(curr_password, user.password, (err, result) => {
-        if (err) return res.status(500).json({ message: "Error while comparing passwords" });
-        if (!result) return res.status(400).json({ message: "Wrong Password" });
+    try {
+        bcrypt.compare(curr_password, user.password, (err, result) => {
+            if (err) return res.status(500).json({ message: "Error while comparing passwords" });
+            if (!result) return res.status(400).json({ message: "Wrong Password" });
 
-        bcrypt.hash(new_password, saltRounds, async (err, passwordHash) => {
-            if (err) return res.status(500).json({ message: "Error while hashing new password" });
+            bcrypt.hash(new_password, saltRounds, async (err, passwordHash) => {
+                if (err) return res.status(500).json({ message: "Error while hashing new password" });
 
-            await pool.query('UPDATE users SET password = $1 WHERE institute_email = $2', [passwordHash, institute_email]);
-            return res.status(200).json({ message: "Password Updated" });
-        });
-    })
+                await pool.query('UPDATE users SET password = $1 WHERE institute_email = $2', [passwordHash, institute_email]);
+                return res.status(200).json({ message: "Password Updated" });
+            });
+        })
+    } catch (err) {
+        res.status(500).json({ message: err });
+    }
 }
