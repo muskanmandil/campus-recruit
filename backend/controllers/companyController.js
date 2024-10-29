@@ -1,9 +1,8 @@
 const pool = require('../config/db');
 const moment = require('moment');
-const { uploadToS3 } = require('../utilities/s3Upload');
+const { uploadToS3, uploadExcel } = require('../utilities/s3Upload');
 const toSnakeCase = require('../utilities/snakeCasing');
-// const xlsx = require('xlsx');
-// const path = require('path');
+const xlsx = require('xlsx');
 
 exports.allCompanies = async (req, res) => {
     try {
@@ -32,7 +31,6 @@ exports.addCompany = async (req, res) => {
                 const fileUrl = await uploadToS3(file, company_name, role_name);
                 docsUrls.push(fileUrl);
             } catch (err) {
-                console.error("Error uploading file to S3:", err);
                 return res.status(500).json({ message: "Error uploading files" });
             }
         }
@@ -40,10 +38,8 @@ exports.addCompany = async (req, res) => {
         values.push(docsUrls);
     }
 
-    if (fields.length === 0) {
-        return res.status(400).json({ message: "No valid fields provided." });
-    }
-
+    if (fields.length === 0) return res.status(400).json({ message: "No valid fields provided." });
+    
     try {
         const columns = fields.join(", ");
         const placeholders = fields.map((_, index) => `$${index + 1}`).join(", ");
@@ -56,16 +52,14 @@ exports.addCompany = async (req, res) => {
             values[deadlineIndex] = formattedDeadline;
         }
 
+        await pool.query(`INSERT INTO companies (${columns}) VALUES (${placeholders}) RETURNING *`, values);
 
-        const company = await pool.query(`INSERT INTO companies (${columns}) VALUES (${placeholders}) RETURNING *`, values);
-        const companyName = company.rows[0].company_name;
-
-        const resultSet = await pool.query(`SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_schema ='public' AND table_name = $1)`, [companyName]);
+        const resultSet = await pool.query(`SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_schema ='public' AND table_name = $1)`, [company_name]);
         if (resultSet.rows[0].exists) {
             return res.status(200).json({ message: "Company listed and company table already exists" });
         }
 
-        await pool.query(`CREATE TABLE ${companyName} (
+        await pool.query(`CREATE TABLE ${company_name} (
             enrollment_no VARCHAR(10),
             role TEXT,
             resume TEXT,
@@ -84,19 +78,15 @@ exports.addCompany = async (req, res) => {
 exports.apply = async (req, res) => {
     const { institute_email } = req.user;
 
-    if (!req.file) {
-        return res.status(400).json({ message: "Please upload a PDF resume file." });
-    }
+    if (!req.file) return res.status(400).json({ message: "Please upload a PDF resume file." });
 
     try {
         const resultSet = await pool.query(`SELECT profile_id FROM users WHERE institute_email = $1`, [institute_email]);
         const enrollment_no = resultSet.rows[0].profile_id;
 
-        const companyName = toSnakeCase(req.body.company_name);
-        const resumeUrl = await uploadToS3(req.file, companyName, 'applications');
-        await pool.query(`INSERT INTO ${companyName} (enrollment_no, role, resume) VALUES ($1, $2, $3)`,
-            [enrollment_no, req.body.role, resumeUrl]
-        );
+        const company_name = toSnakeCase(req.body.company_name);
+        const resumeUrl = await uploadToS3(req.file, company_name, 'applications');
+        await pool.query(`INSERT INTO ${company_name} (enrollment_no, role, resume) VALUES ($1, $2, $3)`,[enrollment_no, req.body.role, resumeUrl]);
 
         return res.status(201).json({ message: "Application submitted successfully." });
 
@@ -105,75 +95,113 @@ exports.apply = async (req, res) => {
     }
 }
 
-// exports.exportData = async (req, res) => {
-//     const { company_name } = req.body;
-//     const { role } = req.user;
+exports.exportData = async (req, res) => {
+    const { role } = req.user;
+    const company_name = toSnakeCase(req.body.company_name);
 
-//     if (role !== 'admin') {
-//         return res.status(403).json({ message: "Access denied, admins only" });
-//     }
+    if (role === 'student') return res.status(403).json({ message: "Access denied, coordinators and admins only" });
 
+    try {
+        const resultSet = await pool.query(
+            `SELECT st.*, c.role, c.resume, c.status, u.institute_email
+             FROM ${company_name} AS c
+             JOIN students AS st ON c.enrollment_no = st.enrollment_no
+             JOIN users AS u ON c.enrollment_no = u.profile_id`
+        );
 
-//     try {
-//         const resultSet = await pool.query(
-//             `SELECT st.*, c.role, c.resume, c.status
-//              FROM ${company_name} AS c
-//              JOIN students AS st ON c.enrollment_no = st.enrollment_no`
-//         );
+        const applications = resultSet.rows;
+        if (applications.length === 0) return res.status(404).json({ message: "No applications found for this company." });
 
-//         const applications = resultSet.rows;
-
-//         if (applications.length === 0) {
-//             return res.status(404).json({ message: "No applications found for this company." });
-//         }
-
-
-//         const data = applications.map((app) => ({
-//             Enrollment_No: app.enrollment_no,
-//             First_Name: app.first_name,
-//             Last_Name: app.last_name,
-//             Gender: app.gender,
-//             College: app.college,
-//             Course: app.course,
-//             Branch: app.branch,
-//             Date_of_Birth: app.date_of_birth,
-//             Year_of_Passing: app.year_of_passing,
-//             Personal_Email: app.personal_email,
-//             Contact_No: app.contact_no,
-//             Tenth_Percentage: app.tenth_percentage,
-//             Twelfth_Percentage: app.twelfth_percentage,
-//             Diploma_CGPA: app.diploma_cgpa,
-//             UG_CGPA: app.ug_cgpa,
-//             Total_Backlogs: app.total_backlogs,
-//             Active_Backlogs: app.active_backlogs,
-//             Role: app.role,
-//             Resume: app.resume,
-//             Status: app.status
-//         }));
+        const data = applications.map((app) => ({
+            enrollment_no: app.enrollment_no,
+            first_name: app.first_name,
+            last_name: app.last_name,
+            gender: app.gender,
+            college: app.college,
+            course: app.course,
+            branch: app.branch,
+            date_of_birth: app.date_of_birth,
+            year_of_passing: app.year_of_passing,
+            personal_email: `HYPERLINK("mailto:${app.personal_email}", "${app.personal_email}")`,
+            institute_email: `HYPERLINK("mailto:${app.institute_email}", "${app.institute_email}")`,
+            contact_no: app.contact_no,
+            tenth_percentage: app.tenth_percentage,
+            twelfth_percentage: app.twelfth_percentage,
+            diploma_cgpa: app.diploma_cgpa,
+            ug_cgpa: app.ug_cgpa,
+            total_backlogs: app.total_backlogs,
+            active_backlogs: app.active_backlogs,
+            role: app.role,
+            resume: `HYPERLINK("${app.resume}", "${app.resume}")`,
+            status: app.status
+        }));
 
 
-//         const workbook = xlsx.utils.book_new();
-//         const worksheet = xlsx.utils.json_to_sheet(data);
-//         xlsx.utils.book_append_sheet(workbook, worksheet, "Applications");
+        const workbook = xlsx.utils.book_new();
+        const worksheet = xlsx.utils.json_to_sheet(data);
 
-//         const filePath = path.join(__dirname, `${company_name}_applications.xlsx`);
-//         xlsx.writeFile(workbook, filePath);
+        Object.keys(data).forEach((rowIdx) => {
+            if (data[rowIdx].personal_email) {
+                worksheet[`J${parseInt(rowIdx) + 2}`].f = data[rowIdx].personal_email;
+            }
+            if (data[rowIdx].institute_email) {
+                worksheet[`K${parseInt(rowIdx) + 2}`].f = data[rowIdx].institute_email;
+            }
+            if (data[rowIdx].resume) {
+                worksheet[`T${parseInt(rowIdx) + 2}`].f = data[rowIdx].resume;
+            }
+        });
 
-//         res.download(filePath, `${company_name}_applications.xlsx`, (err) => {
-//             if (err) {
-//                 console.error("Error sending file:", err);
-//                 return res.status(500).json({ message: "Error downloading file." });
-//             }
-//             // Delete the file after sending it
-//             fs.unlink(filePath, (unlinkErr) => {
-//                 if (unlinkErr) {
-//                     console.error("Error deleting file:", unlinkErr);
-//                 }
-//             });
-//         });
+        xlsx.utils.book_append_sheet(workbook, worksheet, "Applications");
 
-//     } catch (err) {
-//         console.log(err);
-//         return res.status(500).json({ message: 'Error occurred while exporting data.' });
-//     }
-// }
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        const fileName = `${company_name}/${company_name}_data.xlsx`;
+        const fileUrl = await uploadExcel(buffer, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        await pool.query(`UPDATE companies SET data_file = $1 WHERE company_name = $2`, [fileUrl, company_name]);
+
+        return res.status(200).json({ message: "Data exported successfully", fileUrl: fileUrl });
+
+    } catch (err) {
+        return res.status(500).json({ message: err });
+    }
+}
+
+exports.importData = async (req, res) => {
+    const { role } = req.user;
+    const file = req.file;
+    const company_name = toSnakeCase(req.body.company_name);
+
+    if (role === 'student') return res.status(403).json({ message: "Access denied, coordinators and admins only" });
+
+    if (!file) return res.status(400).json({ message: "No file uploaded." });
+
+    try {
+        const workbook = xlsx.read(file.buffer);
+        const sheetName = workbook.SheetNames[0];
+        const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        const enrollmentNumbers = data.map(row => row.enrollment_no);
+
+        const resultSet = await pool.query(`SELECT enrollment_no, status FROM ${company_name}`);
+        const applications = resultSet.rows;
+
+        const updates = [];
+        applications.forEach(app => {
+            if (enrollmentNumbers.includes(app.enrollment_no)) {
+                updates.push({ enrollment_no: app.enrollment_no, status: 'Shortlisted' });
+            } else {
+                updates.push({ enrollment_no: app.enrollment_no, status: 'Rejected' });
+            }
+        });
+
+        for (const update of updates) {
+            await pool.query(`UPDATE ${company_name} SET status = $1 WHERE enrollment_no = $2`, [update.status, update.enrollment_no]);
+        }
+
+        return res.status(200).json({ message: "Data imported and statuses updated successfully." });
+    } catch (error) {
+        return res.status(500).json({ message: err });
+    }
+}

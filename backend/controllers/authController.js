@@ -15,8 +15,8 @@ exports.signup = async (req, res) => {
 
     try {
         const checkUser = await pool.query("SELECT * FROM users WHERE institute_email = $1", [email]);
-        if (checkUser.rows.length > 0)
-            return res.status(400).json({ message: "User already exists. Login to your account" });
+
+        if (checkUser.rows.length > 0) return res.status(400).json({ message: "User already exists. Login to your account" });
 
         await pool.query("DELETE FROM otps WHERE email = $1", [email]);
 
@@ -54,7 +54,7 @@ exports.verify = async (req, res) => {
     const { email, otp } = req.body;
     try {
         const resultSet = await pool.query("SELECT * FROM otps WHERE email = $1", [email]);
-        if (resultSet.rows.length === 0) return res.status(400).json({ message: "Code Expired" });
+        if (resultSet.rows.length === 0) return res.status(400).json({ message: "Code does not exists. Signup Again" });
 
         const otpRecord = resultSet.rows[0];
 
@@ -136,7 +136,7 @@ exports.forgotPassword = async (req, res) => {
             });
         });
 
-    } catch (error) {
+    } catch (err) {
         return res.status(500).json({ message: err });
     }
 }
