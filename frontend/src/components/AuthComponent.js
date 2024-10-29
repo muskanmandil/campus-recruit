@@ -14,7 +14,6 @@ import {
   InputAdornment
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
 
 const AuthComponent = () => {
   const [isSignup, setIsSignup] = useState(false);
@@ -33,13 +32,13 @@ const AuthComponent = () => {
   });
   const [error, setError] = useState('');
 
-  const navigate = useNavigate();
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Example authentication check
-const isAuthenticated = () => {
-    const token = localStorage.getItem('token');
-    return !!token; // Or more sophisticated token validation
-  };
+  // const isAuthenticated = () => {
+  //   const token = localStorage.getItem('token');
+  //   return !!token; // Or more sophisticated token validation
+  // };
 
   const handleInputChange = (e) => {
     setFormData({
@@ -49,18 +48,40 @@ const isAuthenticated = () => {
     setError('');
   };
 
-  const handleForgotPasswordSubmit = (e) => {
+  const handleForgotPasswordSubmit = async (e) => {
     e.preventDefault();
-    
+
     switch (forgotPasswordStep) {
       case 0: // Email submission
         if (!formData.email) {
           setError('Please enter your email');
           return;
         }
-        // Here you would make an API call to send OTP
-        console.log('Sending OTP to:', formData.email);
-        setForgotPasswordStep(1);
+
+        try {
+          const response = await fetch(`${backendUrl}/auth/forgot-password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: formData.email
+            })
+          })
+
+          const data = await response.json();
+
+          if (response.ok) {
+            sessionStorage.setItem('email', formData.email)
+            alert(data.message);
+            setForgotPasswordStep(1);
+          } else {
+            setError(data.message);
+          }
+        } catch (error) {
+          console.log(error);
+          setError('Network error');
+        }
         break;
 
       case 1: // OTP verification
@@ -68,9 +89,33 @@ const isAuthenticated = () => {
           setError('Please enter OTP');
           return;
         }
-        // Here you would verify the OTP
-        console.log('Verifying OTP:', formData.otp);
-        setForgotPasswordStep(2);
+        try {
+          const response = await fetch(`${backendUrl}/auth/verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: sessionStorage.getItem('email'),
+              otp: formData.otp
+            })
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            sessionStorage.removeItem('email');
+            sessionStorage.setItem('token', data.token);
+            sessionStorage.setItem('role', data.role);
+            alert(data.message);
+            setForgotPasswordStep(2);
+          } else {
+            setError(data.message);
+          }
+        } catch (error) {
+          console.log(error);
+          setError('Network Error');
+        }
         break;
 
       case 2: // New password submission
@@ -82,29 +127,40 @@ const isAuthenticated = () => {
           setError('Passwords do not match');
           return;
         }
-        // Here you would make an API call to update password
-        console.log('Updating password');
-        // Reset everything and go back to login
-        setIsForgotPassword(false);
-        setForgotPasswordStep(0);
-        setFormData({
-          name: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          otp: '',
-          newPassword: '',
-          confirmNewPassword: ''
-        });
+
+        try {
+          const response = await fetch(`${backendUrl}/auth/new-password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'auth-token': sessionStorage.getItem('token')
+            },
+            body: JSON.stringify({
+              new_password: formData.newPassword
+            })
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            alert(data.message);
+            window.location.href = '/home';
+          } else {
+            setError(data.message);
+          }
+        } catch (error) {
+          console.log(error);
+          setError('Network Error');
+        }
         break;
     }
   };
 
-  const handleProceed = (e) => {
+  const handleProceed = async (e) => {
     e.preventDefault();
-    
+
     if (isSignup) {
-      if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      if (!formData.email || !formData.password || !formData.confirmPassword) {
         setError('Please fill in all fields');
         return;
       }
@@ -112,54 +168,104 @@ const isAuthenticated = () => {
         setError('Passwords do not match');
         return;
       }
+
+      try {
+        const response = await fetch(`${backendUrl}/auth/signup`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          sessionStorage.setItem('email', formData.email)
+          alert(data.message);
+          setIsOtpSent(true);
+        } else {
+          setError(data.message);
+        }
+      } catch (error) {
+        console.log(error);
+        setError('Network error');
+      }
     }
+    else {
 
-    if (isSignup && !isOtpSent) {
-      setIsOtpSent(true);
-      console.log('Sending OTP to:', formData.email);
-    }
-  };
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-    
-//     if (!isSignup) {
-//       if (!formData.email || !formData.password) {
-//         setError('Please fill in all fields');
-//         return;
-//       }
-//       console.log('Logging in...');
-//       window.location.href = '/home';
-//     } else {
-//       if (!formData.otp) {
-//         setError('Please enter OTP');
-//         return;
-//       }
-//       console.log('Creating account...');
-//       window.location.href = '/profile';
-//     }
-//   };
-
-const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!isSignup) {
       if (!formData.email || !formData.password) {
         setError('Please fill in all fields');
         return;
       }
-      // After successful login
-      localStorage.setItem('token', 'your-auth-token'); // Store your auth token
-      
-    //   navigate('/'); // Navigate to home
-    window.location.href = '/home';
-    } else {
-      if (!formData.otp) {
-        setError('Please enter OTP');
-        return;
+
+      try {
+        const response = await fetch(`${backendUrl}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          sessionStorage.setItem('token', data.token);
+          sessionStorage.setItem('role', data.role);
+          alert(data.message);
+          window.location.href = '/home';
+        } else {
+          setError(data.message);
+        }
+      } catch (error) {
+        console.log(error);
+        setError('Network error');
       }
-      // After successful signup
-      window.location.href = '/profile';
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.otp) {
+      setError('Please enter OTP');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${backendUrl}/auth/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: sessionStorage.getItem('email'),
+          otp: formData.otp
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        sessionStorage.removeItem('email');
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('role', data.role);
+        alert(data.message);
+        window.location.href = '/profile';
+      } else {
+        setError(data.message);
+      }
+
+    } catch (error) {
+      console.log(error);
+      setError('Network Error');
     }
   };
 
@@ -170,7 +276,7 @@ const handleSubmit = (e) => {
           <>
             <TextField
               fullWidth
-              label="Email"
+              label="Institute Email"
               name="email"
               type="email"
               value={formData.email}
@@ -266,8 +372,8 @@ const handleSubmit = (e) => {
       return (
         <>
           <Typography variant="h5" component="h1" textAlign="center" gutterBottom>
-            {forgotPasswordStep === 0 ? 'Forgot Password' : 
-             forgotPasswordStep === 1 ? 'Verify OTP' : 'New Password'}
+            {forgotPasswordStep === 0 ? 'Forgot Password' :
+              forgotPasswordStep === 1 ? 'Verify OTP' : 'New Password'}
           </Typography>
           <Box component="form" onSubmit={handleForgotPasswordSubmit} sx={{ mt: 2 }}>
             {renderForgotPasswordContent()}
@@ -280,6 +386,9 @@ const handleSubmit = (e) => {
               fullWidth
               variant="text"
               onClick={() => {
+                sessionStorage.removeItem('email');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('role');
                 setIsForgotPassword(false);
                 setForgotPasswordStep(0);
                 setFormData({
@@ -303,7 +412,7 @@ const handleSubmit = (e) => {
         <Typography variant="h5" component="h1" textAlign="center" gutterBottom>
           {isSignup ? 'Sign Up' : 'Login'}
         </Typography>
-        
+
         {!isSignup && (
           <Typography variant="body2" textAlign="center" gutterBottom>
             Don't have an account?{' '}
@@ -318,23 +427,11 @@ const handleSubmit = (e) => {
         )}
 
         <Box component="form" onSubmit={isOtpSent ? handleSubmit : handleProceed} sx={{ mt: 2 }}>
-          {isSignup && !isOtpSent && (
-            <TextField
-              fullWidth
-              label="Name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-          )}
-
           {!isOtpSent && (
             <>
               <TextField
                 fullWidth
-                label="Email"
+                label="Institute Email"
                 name="email"
                 type="email"
                 value={formData.email}
@@ -377,20 +474,6 @@ const handleSubmit = (e) => {
                   margin="normal"
                   required
                 />
-              )}
-
-              {!isSignup && (
-                <Box sx={{ mt: 1 }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={showPassword}
-                        onChange={(e) => setShowPassword(e.target.checked)}
-                      />
-                    }
-                    label="Show password"
-                  />
-                </Box>
               )}
             </>
           )}

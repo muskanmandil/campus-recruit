@@ -41,11 +41,11 @@ function App() {
 
 function AppRoutes() {
   const location = useLocation();
-  const isAuthRoute = location.pathname === '/';
+  // const isAuthRoute = location.pathname === '/';
 
   return (
     <>
-      {isAuthRoute ? (
+      {!sessionStorage.getItem('token') ? (
         <Routes>
           <Route path="/" element={<AuthComponent />} />
         </Routes>
