@@ -1,11 +1,7 @@
 const express = require('express');
-const { createProfile, listCompanies, addCompany } = require('../controllers/studentController');
-const { fetchUser } = require('../middlewares/authMiddleware');
+const fetchUser = require('../middleware/auth');
+const {createProfile} = require('../controllers/studentController');
 
 const router = express.Router();
-
-router.post('/profile', fetchUser, createProfile);
-router.get('/companies', listCompanies);
-router.post('/company', addCompany);
-
+router.post('/create-profile', fetchUser, createProfile);
 module.exports = router;
