@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 const drawerWidth = '18%';
 
 const menuItems = [
-  { text: 'Home', icon: <Home />, path: '/' },
+  { text: 'Home', icon: <Home />, path: '/home' },
   { text: 'Your Status', icon: <Info />, path: '/yourStatus' },
   { text: 'Events', icon: <Work />, path: '/events' },
   { text: 'Success', icon: <Mail />, path: '/success' },

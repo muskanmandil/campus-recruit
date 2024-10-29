@@ -41,18 +41,18 @@ function App() {
 
 function AppRoutes() {
   const location = useLocation();
-  const isAuthRoute = location.pathname === '/auth';
+  const isAuthRoute = location.pathname === '/';
 
   return (
     <>
       {isAuthRoute ? (
         <Routes>
-          <Route path="/auth" element={<AuthComponent />} />
+          <Route path="/" element={<AuthComponent />} />
         </Routes>
       ) : (
         <Layout>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/home" element={<HomePage />} />
             <Route path="/yourStatus" element={<YourStatus />} />
             <Route path="/events" element={<Events />} />
             <Route path="/success" element={<Success />} />

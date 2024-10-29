@@ -10,7 +10,7 @@
 
 // File: src/pages/Page3.js
 import React from 'react';
-import Slider from 'react-slick';
+// import Slider from 'react-slick';
 import { Box, Typography, Paper, Avatar } from '@mui/material';
 
 // Sample data - we'll just use one company for now
