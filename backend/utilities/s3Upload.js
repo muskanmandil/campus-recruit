@@ -1,7 +1,6 @@
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const fs=require('fs');
 
 const s3 = new AWS.S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -25,4 +24,16 @@ const uploadToS3 = async (file, companyName, role) => {
     return data.Location;
 };
 
-module.exports = { uploadToS3 };
+const uploadExcel = async (buffer, fileName, contentType) => {
+    const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: fileName,
+        Body: buffer,
+        ContentType: contentType
+    };
+
+    const data = await s3.upload(params).promise();
+    return data.Location;
+};
+
+module.exports = { uploadToS3, uploadExcel };

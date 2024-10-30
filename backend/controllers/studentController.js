@@ -8,9 +8,7 @@ exports.createProfile = async (req, res) => {
     const fields = Object.keys(req.body).filter(field => validFields.includes(field));
     const values = fields.map(field => req.body[field]);
 
-    if (fields.length === 0) {
-        return res.status(400).json({ message: "No valid fields provided." });
-    }
+    if (fields.length === 0) return res.status(400).json({ message: "No valid fields provided." });
 
     try {
         const columns = fields.join(", ");
