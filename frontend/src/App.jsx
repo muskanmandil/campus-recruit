@@ -26,6 +26,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import YourStatus from './pages/YourStatus.jsx';
 import Events from './pages/Events.jsx';
 import AuthComponent from './components/AuthComponent.js';
+import CompanyManagement from './pages/CompanyManagement.js';
 
 
 function App() {
@@ -58,6 +59,7 @@ function AppRoutes() {
             <Route path="/success" element={<Success />} />
             <Route path="/profile" element={<Page4 />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/companyManage" element={<CompanyManagement />} />
           </Routes>
         </Layout>
       )}
