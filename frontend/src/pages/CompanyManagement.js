@@ -23,8 +23,6 @@ import {
 import {
   Add as AddIcon,
   Edit as EditIcon,
-  Upload as ImportIcon,
-  Download as ExportIcon,
   Delete as DeleteIcon,
   AttachFile as AttachFileIcon
 } from '@mui/icons-material';
@@ -36,7 +34,7 @@ const CompanyManagement = () => {
     ctc: '',
     location: [],
     description: '',
-    docs_attached: [], // Will store file objects
+    docs_attached: [],
     deadline: '',
     eligible_branch: [],
     tenth_percentage: '',
@@ -50,7 +48,8 @@ const CompanyManagement = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
-  const [uploadedFiles, setUploadedFiles] = useState([]); // Store file objects
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [viewMore, setViewMore] = useState({});
 
   const handleOpen = () => {
     setOpen(true);
@@ -84,9 +83,6 @@ const CompanyManagement = () => {
   const handleFileUpload = (event) => {
     const files = Array.from(event.target.files);
     setUploadedFiles(prevFiles => [...prevFiles, ...files]);
-    
-    // In a real application, you would upload these files to your server/S3
-    // For now, we'll just store the file objects
     setFormData(prev => ({
       ...prev,
       docs_attached: [...prev.docs_attached, ...files.map(file => ({
@@ -128,8 +124,6 @@ const CompanyManagement = () => {
       ug_cgpa: Number(formData.ug_cgpa).toFixed(2)
     };
 
-    // In a real application, you would handle file uploads here
-    // For now, we'll just store the file metadata
     formattedData.docs_attached = uploadedFiles.map(file => ({
       name: file.name,
       size: file.size,
@@ -141,17 +135,15 @@ const CompanyManagement = () => {
       updatedCompanies[editIndex] = formattedData;
       setCompanies(updatedCompanies);
     } else {
-      setCompanies([...companies, formattedData]);
+      setCompanies([formattedData, ...companies]);
     }
     handleClose();
   };
 
-  // Rest of the handlers remain the same...
   const handleEdit = (index) => {
     setIsEdit(true);
     setEditIndex(index);
     setFormData(companies[index]);
-    // For edit, we'd typically need to fetch the actual files from the server
     setUploadedFiles(companies[index].docs_attached);
     setOpen(true);
   };
@@ -183,6 +175,10 @@ const CompanyManagement = () => {
     };
 
     reader.readAsText(file);
+  };
+
+  const toggleViewMore = (index) => {
+    setViewMore(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
   return (
@@ -223,7 +219,10 @@ const CompanyManagement = () => {
                 </Box>
                 {company.description && (
                   <Typography variant="body2" color="text.secondary">
-                    Description: {company.description}
+                    Description: {viewMore[index] ? company.description : `${company.description.slice(0, 50)}... `}
+                    <Button size="small" onClick={() => toggleViewMore(index)}>
+                      {viewMore[index] ? 'View Less' : 'View More'}
+                    </Button>
                   </Typography>
                 )}
                 {company.docs_attached.length > 0 && (
@@ -273,20 +272,19 @@ const CompanyManagement = () => {
                 </Typography>
               </CardContent>
               <CardActions>
-                <IconButton onClick={() => handleEdit(index)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton onClick={() => handleExport(company)}>
-                  <ExportIcon />
-                </IconButton>
-                <IconButton component="label">
+                <Button onClick={() => handleEdit(index)} startIcon={<EditIcon />}>Edit</Button>
+                <Button onClick={() => handleExport(company)}>Export</Button>
+                <label htmlFor={`import-input-${index}`}>
                   <input
+                    id={`import-input-${index}`}
                     type="file"
                     hidden
-                    accept=".json"
                     onChange={(e) => handleImport(e, index)}
                   />
-                  <ImportIcon />
+                  <Button component="span">Import</Button>
+                </label>
+                <IconButton onClick={() => setCompanies(companies.filter((_, i) => i !== index))}>
+                  <DeleteIcon />
                 </IconButton>
               </CardActions>
             </Card>
@@ -294,142 +292,150 @@ const CompanyManagement = () => {
         ))}
       </Grid>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {isEdit ? 'Edit Company Details' : 'Add New Company'}
-        </DialogTitle>
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{isEdit ? 'Edit Company' : 'Add New Company'}</DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              name="company_name"
-              label="Company Name"
-              fullWidth
-              value={formData.company_name}
-              onChange={handleChange}
-            />
-            <TextField
-              name="role"
-              label="Role"
-              fullWidth
-              value={formData.role}
-              onChange={handleChange}
-            />
-            <TextField
-              name="ctc"
-              label="CTC"
-              type="number"
-              fullWidth
-              value={formData.ctc}
-              onChange={handleChange}
-            />
-            <TextField
-              name="location"
-              label="Location (comma-separated)"
-              fullWidth
-              value={formData.location.join(', ')}
-              onChange={handleChange}
-              helperText="Enter locations separated by commas"
-            />
-            <TextField
-              name="description"
-              label="Description"
-              fullWidth
-              multiline
-              rows={3}
-              value={formData.description || ''}
-              onChange={handleChange}
-            />
-            <Box>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<AttachFileIcon />}
-              >
-                Upload Documents
-                <input
-                  type="file"
-                  hidden
-                  multiple
-                  onChange={handleFileUpload}
-                />
-              </Button>
-              {uploadedFiles.length > 0 && (
-                <List dense>
-                  {uploadedFiles.map((file, index) => (
-                    <ListItem key={index}>
-                      <ListItemText
-                        primary={file.name}
-                        secondary={formatFileSize(file.size)}
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton 
-                          edge="end" 
-                          onClick={() => handleRemoveFile(index)}
-                          size="small"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-            </Box>
-            <TextField
-              name="deadline"
-              label="Deadline"
-              type="datetime-local"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              value={formData.deadline}
-              onChange={handleChange}
-            />
-            <TextField
-              name="eligible_branch"
-              label="Eligible Branches (comma-separated)"
-              fullWidth
-              value={formData.eligible_branch.join(', ')}
-              onChange={handleChange}
-              helperText="Enter branches separated by commas"
-            />
-            <TextField
-              name="tenth_percentage"
-              label="10th Percentage"
-              type="number"
-              fullWidth
-              value={formData.tenth_percentage}
-              onChange={handleChange}
-            />
-            <TextField
-              name="twelfth_percentage"
-              label="12th Percentage"
-              type="number"
-              fullWidth
-              value={formData.twelfth_percentage}
-              onChange={handleChange}
-            />
-            <TextField
-              name="diploma_cgpa"
-              label="Diploma CGPA"
-              type="number"
-              fullWidth
-              value={formData.diploma_cgpa}
-              onChange={handleChange}
-            />
-            <TextField
-              name="ug_cgpa"
-              label="UG CGPA"
-              type="number"
-              fullWidth
-              value={formData.ug_cgpa}
-              onChange={handleChange}
-            />
+          <TextField
+            autoFocus
+            margin="dense"
+            name="company_name"
+            label="Company Name"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={formData.company_name}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="role"
+            label="Role"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={formData.role}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="ctc"
+            label="CTC (₹)"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={formData.ctc}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="location"
+            label="Location (comma-separated)"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={formData.location.join(', ')}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="description"
+            label="Description"
+            type="text"
+            fullWidth
+            variant="outlined"
+            multiline
+            rows={4}
+            value={formData.description}
+            onChange={handleChange}
+          />
+          <Box sx={{ mt: 2 }}>
+            <Button variant="contained" component="label" startIcon={<AttachFileIcon />}>
+              Upload Documents
+              <input
+                type="file"
+                hidden
+                multiple
+                onChange={handleFileUpload}
+              />
+            </Button>
+            <List dense>
+              {uploadedFiles.map((file, i) => (
+                <ListItem key={i}>
+                  <ListItemText primary={file.name} secondary={formatFileSize(file.size)} />
+                  <ListItemSecondaryAction>
+                    <IconButton edge="end" onClick={() => handleRemoveFile(i)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
           </Box>
+          <TextField
+            margin="dense"
+            name="deadline"
+            label="Deadline"
+            type="datetime-local"
+            fullWidth
+            variant="outlined"
+            value={formData.deadline}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="eligible_branch"
+            label="Eligible Branches (comma-separated)"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={formData.eligible_branch.join(', ')}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="tenth_percentage"
+            label="10th Percentage Requirement"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={formData.tenth_percentage}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="twelfth_percentage"
+            label="12th Percentage Requirement"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={formData.twelfth_percentage}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="diploma_cgpa"
+            label="Diploma CGPA Requirement"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={formData.diploma_cgpa}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="ug_cgpa"
+            label="UG CGPA Requirement"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={formData.ug_cgpa}
+            onChange={handleChange}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
           <Button onClick={handleSubmit} variant="contained">
-            {isEdit ? 'Update' : 'Submit'}
+            {isEdit ? 'Update' : 'Add'}
           </Button>
         </DialogActions>
       </Dialog>

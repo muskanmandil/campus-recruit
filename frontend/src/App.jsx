@@ -27,6 +27,7 @@ import YourStatus from './pages/YourStatus.jsx';
 import Events from './pages/Events.jsx';
 import AuthComponent from './components/AuthComponent.js';
 import CompanyManagement from './pages/CompanyManagement.js';
+import ManageEvents from './pages/ManageEvents.js';
 
 
 function App() {
@@ -60,6 +61,7 @@ function AppRoutes() {
             <Route path="/profile" element={<Page4 />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/companyManage" element={<CompanyManagement />} />
+            <Route path="/eventManage" element={<ManageEvents />} />
           </Routes>
         </Layout>
       )}
