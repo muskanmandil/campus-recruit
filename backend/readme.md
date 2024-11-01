@@ -50,7 +50,7 @@ CREATE TABLE companies (
     ctc NUMERIC(10, 2) NOT NULL,                                      
     location VARCHAR[] NOT NULL,                                      
     description TEXT,                                        
-    docs_attached VARCHAR(255),                                       
+    docs_attached VARCHAR[],                                       
     deadline TIMESTAMP NOT NULL,                                                                
     eligible_branch VARCHAR[] NOT NULL DEFAULT ARRAY['CS', 'IT', 'ETC', 'EI', 'Mechanical', 'Civil'], 
     tenth_percentage NUMERIC(5,2) NOT NULL DEFAULT 60,                
