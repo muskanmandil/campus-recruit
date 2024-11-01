@@ -12,6 +12,8 @@ const menuItems = [
   { text: 'Success', icon: <Mail />, path: '/success' },
   { text: 'Profile', icon: <Settings />, path: '/profile' },
   { text: 'Company Management', icon: <Help />, path: '/companyManage' },
+  { text: 'Event Management', icon: <Help />, path: '/eventManage' },
+
 ];
 
 function Sidebar() {
