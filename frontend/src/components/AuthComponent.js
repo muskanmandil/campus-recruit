@@ -34,12 +34,6 @@ const AuthComponent = () => {
 
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
-  // Example authentication check
-  // const isAuthenticated = () => {
-  //   const token = localStorage.getItem('token');
-  //   return !!token; // Or more sophisticated token validation
-  // };
-
   const handleInputChange = (e) => {
     setFormData({
       ...formData,

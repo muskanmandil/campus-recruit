@@ -1,7 +1,8 @@
 const express = require('express');
 const fetchUser = require('../middleware/auth');
-const {createProfile} = require('../controllers/studentController');
+const {createProfile, fetchProfile} = require('../controllers/studentController');
 
 const router = express.Router();
 router.post('/create-profile', fetchUser, createProfile);
+router.get('/profile', fetchUser, fetchProfile);
 module.exports = router;

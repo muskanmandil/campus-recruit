@@ -1,6 +1,26 @@
 const pool = require('../config/db');
 const moment = require('moment');
 
+exports.fetchProfile = async (req, res) => {
+    const { institute_email } = req.user;
+
+    try {
+        const resultSet = await pool.query('SELECT profile_id FROM users WHERE institute_email = $1', [institute_email]);
+        if (resultSet.rows.length === 0) {
+            return res.status(404).json({ message: "Profile not found" });
+        }
+
+        const profileId = resultSet.rows[0].profile_id;
+        const profile = await pool.query('SELECT * FROM students WHERE enrollment_no = $1', [profileId]);
+        return res.status(200).json(profile.rows[0]);
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Error fetching profile' });
+    }
+};
+
+
 exports.createProfile = async (req, res) => {
     const { institute_email } = req.user;
 

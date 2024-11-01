@@ -39,7 +39,7 @@ exports.addCompany = async (req, res) => {
     }
 
     if (fields.length === 0) return res.status(400).json({ message: "No valid fields provided." });
-    
+
     try {
         const columns = fields.join(", ");
         const placeholders = fields.map((_, index) => `$${index + 1}`).join(", ");
@@ -83,10 +83,13 @@ exports.apply = async (req, res) => {
     try {
         const resultSet = await pool.query(`SELECT profile_id FROM users WHERE institute_email = $1`, [institute_email]);
         const enrollment_no = resultSet.rows[0].profile_id;
-
         const company_name = toSnakeCase(req.body.company_name);
+
+        const checkResult = await pool.query(`SELECT * FROM ${company_name} WHERE enrollment_no = $1 AND role = $2`, [enrollment_no, req.body.role]);
+        if (checkResult.rows.length > 0) return res.status(409).json({ message: "Already applied" });
+
         const resumeUrl = await uploadToS3(req.file, company_name, 'applications');
-        await pool.query(`INSERT INTO ${company_name} (enrollment_no, role, resume) VALUES ($1, $2, $3)`,[enrollment_no, req.body.role, resumeUrl]);
+        await pool.query(`INSERT INTO ${company_name} (enrollment_no, role, resume) VALUES ($1, $2, $3)`, [enrollment_no, req.body.role, resumeUrl]);
 
         return res.status(201).json({ message: "Application submitted successfully." });
 
