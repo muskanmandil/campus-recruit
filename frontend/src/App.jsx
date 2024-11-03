@@ -16,18 +16,19 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import theme from './theme';
 import HomePage from './pages/HomePage';
 import Layout from './components/Layout.jsx';
-import Page1 from './pages/YourStatus.jsx';
-import Page2 from './pages/Events.jsx';
+// import Page1 from './pages/YourStatus.jsx';
+// import Page2 from './pages/Events.jsx';
 import Success from './pages/Success.jsx';
 import Page4 from './pages/Profile.jsx';
-import Page5 from './pages/Page5';
-import ProfilePage from './pages/ProfilePage';
+// import Page5 from './pages/Page5';
+// import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
-import YourStatus from './pages/YourStatus.jsx';
 import Events from './pages/Events.jsx';
 import AuthComponent from './components/AuthComponent.js';
 import CompanyManagement from './pages/CompanyManagement.js';
 import ManageEvents from './pages/ManageEvents.js';
+// import { Analytics } from '@mui/icons-material';
+import Analytics from './pages/Analytics.jsx';
 
 
 function App() {
@@ -55,7 +56,7 @@ function AppRoutes() {
         <Layout>
           <Routes>
             <Route path="/home" element={<HomePage />} />
-            <Route path="/yourStatus" element={<YourStatus />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/events" element={<Events />} />
             <Route path="/success" element={<Success />} />
             <Route path="/profile" element={<Page4 />} />

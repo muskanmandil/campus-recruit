@@ -19,8 +19,10 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Avatar,
+  Stack
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Visibility, VisibilityOff, AddAPhoto } from '@mui/icons-material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -32,6 +34,8 @@ const branches = ["CS", "IT", "ETC", "EI", "Mechanical", "Civil"];
 
 const AuthComponent = () => {
   // Existing state variables
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
@@ -50,6 +54,8 @@ const AuthComponent = () => {
 
   // New state variables for profile modal
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -66,10 +72,29 @@ const AuthComponent = () => {
     diploma_cgpa: '',
     ug_cgpa: '',
     total_backlogs: 0,
-    active_backlogs: 0
+    active_backlogs: 0,
+    profile_image: null
   });
 
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
+
+  const handleImageChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // 1MB limit
+        setError('Please select an image less than 1MB');
+        return;
+      }
+      setProfileImage(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Profile form handlers
   const handleProfileChange = (event) => {
@@ -78,6 +103,7 @@ const AuthComponent = () => {
       ...prev,
       [name]: value
     }));
+    setError('');
   };
 
   const handleDateChange = (date) => {
@@ -89,13 +115,37 @@ const AuthComponent = () => {
 
   const handleProfileSubmit = async () => {
     try {
+      setIsSubmitting(true);
+      setError('');
+
+
+      const formDataToSend = new FormData();
+      if (profileImage) {
+        if (profileImage.size > 1024 * 1024) { // 1MB limit
+          setError('Image size should be less than 1MB');
+          return;
+        }
+        // formDataToSend.append('profile_image', profileImage);
+        formDataToSend.append('profile_image', profileImage);
+      }
+      
+      // Append other form data
+      Object.keys(profileData).forEach(key => {
+        if (key !== 'profile_image') {
+          formDataToSend.append(key, profileData[key]);
+        }
+      });
+
+
+
       const response = await fetch(`${backendUrl}/student/profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'auth-token': sessionStorage.getItem('token')
         },
-        body: JSON.stringify(profileData)
+        // body: JSON.stringify(profileData)
+        body: formDataToSend
       });
 
       const data = await response.json();
@@ -109,6 +159,8 @@ const AuthComponent = () => {
     } catch (error) {
       console.log(error);
       setError('Network error');
+    }finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -157,245 +209,394 @@ const AuthComponent = () => {
       open={showProfileModal} 
       maxWidth="md" 
       fullWidth
+      onClose={(e) => e.preventDefault()}
     >
-      <DialogTitle>Create New Profile</DialogTitle>
+      <DialogTitle>
+        Create New Profile
+        {error && (
+          <Alert severity="error" sx={{ mt: 1 }}>
+            {error}
+          </Alert>
+        )}
+      </DialogTitle>
       <DialogContent>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            {/* Personal Information */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="First Name"
-                name="first_name"
-                value={profileData.first_name}
-                onChange={handleProfileChange}
-                required
+        <Box component="form" onSubmit={(e) => e.preventDefault()} noValidate 
+          autoComplete="off">
+
+             {/* Profile Image Upload */}
+          <Stack
+            direction="column"
+            alignItems="center"
+            spacing={2}
+            sx={{ my: 3 }}
+          >
+            <Avatar
+              src={profileImagePreview}
+              sx={{ width: 120, height: 120 }}
+            />
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AddAPhoto />}
+            >
+              Upload Photo
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handleImageChange}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Last Name"
-                name="last_name"
-                value={profileData.last_name}
-                onChange={handleProfileChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Gender</InputLabel>
-                <Select
-                  label="Gender"
-                  name="gender"
-                  value={profileData.gender}
+            </Button>
+          </Stack>
+
+        
+
+
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Grid container spacing={2}>
+              {/* Personal Information */}
+              <Grid item xs={12}>
+                <Typography variant="h6" color="primary" gutterBottom>
+                  Personal Information
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  name="first_name"
+                  value={profileData.first_name}
                   onChange={handleProfileChange}
                   required
-                >
-                  {genderOptions.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <DatePicker
-                label="Date of Birth"
-                value={profileData.date_of_birth ? dayjs(profileData.date_of_birth, "DD-MM-YYYY") : null}
-                onChange={handleDateChange}
-                required
-                sx={{ width: '100%' }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Personal Email"
-                name="personal_email"
-                type="email"
-                value={profileData.personal_email}
-                onChange={handleProfileChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Contact No."
-                name="contact_no"
-                type="tel"
-                value={profileData.contact_no}
-                onChange={handleProfileChange}
-                required
-                inputProps={{ maxLength: 10 }}
-              />
-            </Grid>
-
-            {/* Educational Details */}
-            <Grid item xs={12}>
-              <Typography variant="h6" sx={{ mb: 2 }}>Educational Details</Typography>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>College</InputLabel>
-                <Select
-                  label="College"
-                  name="college"
-                  value={profileData.college}
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  name="last_name"
+                  value={profileData.last_name}
                   onChange={handleProfileChange}
                   required
-                >
-                  {colleges.map((college) => (
-                    <MenuItem key={college} value={college}>{college}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Course</InputLabel>
-                <Select
-                  label="Course"
-                  name="course"
-                  value={profileData.course}
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Gender</InputLabel>
+                  <Select
+                    label="Gender"
+                    name="gender"
+                    value={profileData.gender}
+                    onChange={handleProfileChange}
+                    required
+                    variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  >
+                    {genderOptions.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <DatePicker
+                  label="Date of Birth"
+                  value={profileData.date_of_birth ? dayjs(profileData.date_of_birth, "DD-MM-YYYY") : null}
+                  onChange={handleDateChange}
+                  required
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ width: '100%' }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Personal Email"
+                  name="personal_email"
+                  type="email"
+                  value={profileData.personal_email}
                   onChange={handleProfileChange}
                   required
-                >
-                  {courses.map((course) => (
-                    <MenuItem key={course} value={course}>{course}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Branch</InputLabel>
-                <Select
-                  label="Branch"
-                  name="branch"
-                  value={profileData.branch}
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Contact No."
+                  name="contact_no"
+                  type="tel"
+                  value={profileData.contact_no}
                   onChange={handleProfileChange}
                   required
-                >
-                  {branches.map((branch) => (
-                    <MenuItem key={branch} value={branch}>{branch}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+                  inputProps={{ maxLength: 10 }}
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+  
+              {/* Educational Details */}
+              <Grid item xs={12}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Educational Details</Typography>
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>College</InputLabel>
+                  <Select
+                    label="College"
+                    name="college"
+                    value={profileData.college}
+                    onChange={handleProfileChange}
+                    required
+                    variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  >
+                    {colleges.map((college) => (
+                      <MenuItem key={college} value={college}>{college}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Course</InputLabel>
+                  <Select
+                    label="Course"
+                    name="course"
+                    value={profileData.course}
+                    onChange={handleProfileChange}
+                    required
+                    variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  >
+                    {courses.map((course) => (
+                      <MenuItem key={course} value={course}>{course}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Branch</InputLabel>
+                  <Select
+                    label="Branch"
+                    name="branch"
+                    value={profileData.branch}
+                    onChange={handleProfileChange}
+                    required
+                    variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  >
+                    {branches.map((branch) => (
+                      <MenuItem key={branch} value={branch}>{branch}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Year of Passing"
+                  name="year_of_passing"
+                  type="number"
+                  value={profileData.year_of_passing}
+                  onChange={handleProfileChange}
+                  required
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: 2010, max: 2100 }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Year of Passing"
-                name="year_of_passing"
-                type="number"
-                value={profileData.year_of_passing}
-                onChange={handleProfileChange}
-                required
-                inputProps={{ min: 2010, max: 2100 }}
-              />
-            </Grid>
+              <Grid item xs={12} sx={{ mt: 2 }}>
+                <Typography variant="h6" color="primary">
+                  Academic Performance
+                </Typography>
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Tenth Percentage"
+                  name="tenth_percentage"
+                  type="number"
+                  value={profileData.tenth_percentage}
+                  onChange={handleProfileChange}
+                  required
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                    inputProps: { min: 0, max: 100, step: 0.01 }
+                    // variant="outlined"
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Twelfth Percentage"
+                  name="twelfth_percentage"
+                  type="number"
+                  value={profileData.twelfth_percentage}
+                  onChange={handleProfileChange}
+                  required={!profileData.diploma_cgpa}
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                    inputProps: { min: 0, max: 100, step: 0.01 }
+                    // variant="outlined"
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Diploma CGPA"
+                  name="diploma_cgpa"
+                  type="number"
+                  value={profileData.diploma_cgpa}
+                  onChange={handleProfileChange}
+                  required={!profileData.twelfth_percentage}
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    inputProps: { min: 0, max: 10, step: 0.01 }
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="UG CGPA"
+                  name="ug_cgpa"
+                  type="number"
+                  value={profileData.ug_cgpa}
+                  onChange={handleProfileChange}
+                  required
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    inputProps: { min: 0, max: 10, step: 0.01 }
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Total Backlogs"
+                  name="total_backlogs"
+                  type="number"
+                  value={profileData.total_backlogs}
+                  onChange={handleProfileChange}
+                  required
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: 0 }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
+  
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Active Backlogs"
+                  name="active_backlogs"
+                  type="number"
+                  value={profileData.active_backlogs}
+                  onChange={handleProfileChange}
+                  required
+                  variant="outlined"
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: 0 }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Tenth Percentage"
-                name="tenth_percentage"
-                type="number"
-                value={profileData.tenth_percentage}
-                onChange={handleProfileChange}
-                required
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  inputProps: { min: 0, max: 100, step: 0.01 }
-                }}
-              />
-            </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Twelfth Percentage"
-                name="twelfth_percentage"
-                type="number"
-                value={profileData.twelfth_percentage}
-                onChange={handleProfileChange}
-                required={!profileData.diploma_cgpa}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  inputProps: { min: 0, max: 100, step: 0.01 }
-                }}
-              />
+              {/* <Grid container spacing={2} sx={{ mt: 1 }}></Grid> */}
             </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Diploma CGPA"
-                name="diploma_cgpa"
-                type="number"
-                value={profileData.diploma_cgpa}
-                onChange={handleProfileChange}
-                required={!profileData.twelfth_percentage}
-                InputProps={{
-                  inputProps: { min: 0, max: 10, step: 0.01 }
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="UG CGPA"
-                name="ug_cgpa"
-                type="number"
-                value={profileData.ug_cgpa}
-                onChange={handleProfileChange}
-                required
-                InputProps={{
-                  inputProps: { min: 0, max: 10, step: 0.01 }
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Total Backlogs"
-                name="total_backlogs"
-                type="number"
-                value={profileData.total_backlogs}
-                onChange={handleProfileChange}
-                required
-                inputProps={{ min: 0 }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Active Backlogs"
-                name="active_backlogs"
-                type="number"
-                value={profileData.active_backlogs}
-                onChange={handleProfileChange}
-                required
-                inputProps={{ min: 0 }}
-              />
-            </Grid>
-          </Grid>
-        </LocalizationProvider>
+          </LocalizationProvider>
+        </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleProfileSubmit} variant="contained" color="primary">
-          Submit
+      <Button 
+          onClick={handleProfileSubmit} 
+          variant="contained" 
+          color="primary"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -832,22 +1033,22 @@ const renderForgotPasswordContent = () => {
   
   return (
     <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'grey.100',
-        p: 2
-      }}
-    >
-      <Card sx={{ maxWidth: 400, width: '100%' }}>
-        <CardContent sx={{ p: 3 }}>
-          {renderMainContent()}
-        </CardContent>
-      </Card>
-      <ProfileModal />
-    </Box>
+    sx={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      bgcolor: 'grey.100',
+      p: 2
+    }}
+  >
+    <Card sx={{ maxWidth: 400, width: '100%' }}>
+      <CardContent sx={{ p: 3 }}>
+        {renderMainContent()}
+      </CardContent>
+    </Card>
+    <ProfileModal />
+  </Box>
   );
 };
 
