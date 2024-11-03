@@ -5,7 +5,8 @@ const cors = require("cors");
 const authRoutes = require('./routes/authRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const studentRoutes = require('./routes/studentRoutes');
-// const eventRoutes = require('./routes/eventRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const analyticRoutes = require('./routes/analyticRoutes');
 require('dotenv').config();
 
 pool.connect();
@@ -18,7 +19,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/student', studentRoutes);
-// app.use('/api/event', eventRoutes);
+app.use('/api/event', eventRoutes);
+app.use('/api/analytic', analyticRoutes);
+
 
 
 const port = 4000;

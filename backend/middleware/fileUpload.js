@@ -1,5 +1,4 @@
 const multer = require('multer');
-
 const storage = multer.memoryStorage();
 
 const pdfFilter = (req, file, cb) => {
@@ -23,6 +22,15 @@ const excelFilter = (req, file, cb) => {
     }
 }
 
+const imageFilter = (req, file, cb) => {
+    const allowedTypes = ['image/jpeg'];
+    if(allowedTypes.includes(file.mimetype)){
+        cb(null, true);
+    } else {
+        cb(new Error('Only JPEG images are allowed!', false));
+    }
+}
+
 const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 }
@@ -34,10 +42,16 @@ const resumeUpload = multer({
     fileFilter: pdfFilter
 });
 
-const excelUpload = multer({ 
+const excelUpload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024}, 
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: excelFilter
 });
 
-module.exports = { upload, resumeUpload, excelUpload };
+const imageUpload = multer({
+    storage: storage,
+    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter:  imageFilter
+})
+
+module.exports = { upload, resumeUpload, excelUpload, imageUpload };

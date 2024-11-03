@@ -36,4 +36,16 @@ const uploadExcel = async (buffer, fileName, contentType) => {
     return data.Location;
 };
 
-module.exports = { uploadToS3, uploadExcel };
+const uploadImage = async (file, key, contentType) => {
+    const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+        Body: file.buffer,
+        ContentType: contentType,
+    };
+
+    const data = await s3.upload(params).promise();
+    return data.Location;
+};
+
+module.exports = { uploadToS3, uploadExcel, uploadImage };
