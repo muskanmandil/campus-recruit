@@ -7,7 +7,7 @@ const drawerWidth = '18%';
 
 const menuItems = [
   { text: 'Home', icon: <Home />, path: '/home' },
-  { text: 'Your Status', icon: <Info />, path: '/yourStatus' },
+  { text: 'Analytics', icon: <Info />, path: '/analytics' },
   { text: 'Events', icon: <Work />, path: '/events' },
   { text: 'Success', icon: <Mail />, path: '/success' },
   { text: 'Profile', icon: <Settings />, path: '/profile' },
