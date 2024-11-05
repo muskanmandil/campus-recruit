@@ -1,13 +1,3 @@
-// import React from 'react'
-
-// const NotificationsPage = () => {
-//   return (
-//     <div>NotificationsPage helooooooooooooo</div>
-//   )
-// }
-
-// export default NotificationsPage;
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Typography } from '@mui/material';
 
@@ -31,7 +21,7 @@ const notificationData = [
   // Add more notifications here
 ];
 
-const NotificationsPage = () => {
+const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
 
   // Simulating fetching daily notifications
@@ -59,4 +49,4 @@ const NotificationsPage = () => {
   );
 };
 
-export default NotificationsPage;
+export default Notifications;

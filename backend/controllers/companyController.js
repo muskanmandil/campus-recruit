@@ -1,5 +1,4 @@
 const pool = require('../config/db');
-const moment = require('moment');
 const { uploadToS3, uploadExcel } = require('../utilities/s3Upload');
 const toSnakeCase = require('../utilities/snakeCasing');
 const xlsx = require('xlsx');
@@ -9,6 +8,7 @@ exports.allCompanies = async (req, res) => {
         const { rows: companies } = await pool.query('SELECT * from companies');
         return res.status(200).json({ companies: companies });
     } catch (err) {
+        console.error(err);
         return res.status(500).json({ message: "Error fetching companies" });
     }
 };
@@ -44,14 +44,6 @@ exports.addCompany = async (req, res) => {
         const columns = fields.join(", ");
         const placeholders = fields.map((_, index) => `$${index + 1}`).join(", ");
 
-        const deadlineIndex = fields.indexOf('deadline');
-        const deadlineValue = values[deadlineIndex];
-
-        if (deadlineValue) {
-            const formattedDeadline = moment(deadlineValue, 'DD-MM-YYYY hh:mm A').format('YYYY-MM-DD HH:mm:ss');
-            values[deadlineIndex] = formattedDeadline;
-        }
-
         await pool.query(`INSERT INTO companies (${columns}) VALUES (${placeholders}) RETURNING *`, values);
 
         const resultSet = await pool.query(`SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_schema ='public' AND table_name = $1)`, [company_name]);
@@ -71,6 +63,7 @@ exports.addCompany = async (req, res) => {
         return res.status(201).json({ message: "Company listed and associated table created successfully." });
 
     } catch (err) {
+        console.error(err);
         return res.status(500).json({ message: err });
     }
 }
@@ -94,6 +87,7 @@ exports.apply = async (req, res) => {
         return res.status(201).json({ message: "Application submitted successfully." });
 
     } catch (err) {
+        console.error(err);
         return res.status(500).json({ message: err });
     }
 }
@@ -167,6 +161,7 @@ exports.exportData = async (req, res) => {
         return res.status(200).json({ message: "Data exported successfully", fileUrl: fileUrl });
 
     } catch (err) {
+        console.error(err);
         return res.status(500).json({ message: err });
     }
 }
@@ -205,6 +200,7 @@ exports.importData = async (req, res) => {
 
         return res.status(200).json({ message: "Data imported and statuses updated successfully." });
     } catch (error) {
+        console.error(err);
         return res.status(500).json({ message: err });
     }
 }

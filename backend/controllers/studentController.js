@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const moment = require('moment');
 const { uploadImage } = require('../utilities/s3Upload');
+const { console } = require('inspector');
 
 exports.fetchProfile = async (req, res) => {
     const { institute_email } = req.user;
@@ -13,6 +14,7 @@ exports.fetchProfile = async (req, res) => {
 
         const profileId = resultSet.rows[0].profile_id;
         const profile = await pool.query('SELECT * FROM students WHERE enrollment_no = $1', [profileId]);
+        profile.rows[0].date_of_birth = moment(profile.rows[0].date_of_birth).format("DD-MM-YYYY");
         return res.status(200).json(profile.rows[0]);
 
     } catch (error) {
@@ -62,6 +64,7 @@ exports.createProfile = async (req, res) => {
 
     } catch (err) {
         await pool.query('ROLLBACK');
+        console.error(err);
         return res.status(500).json({ message: err });
     }
 }
