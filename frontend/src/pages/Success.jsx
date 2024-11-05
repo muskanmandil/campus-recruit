@@ -1,19 +1,7 @@
-// import React from 'react'
-
-// const Page3 = () => {
-//   return (
-//     <div>Page3 helooooooooooooo</div>
-//   )
-// }
-
-// export default Page3;
-
-// File: src/pages/Page3.js
 import React from 'react';
 // import Slider from 'react-slick';
 import { Box, Typography, Paper, Avatar } from '@mui/material';
 
-// Sample data - we'll just use one company for now
 const companiesData = [
   {
     name: 'Company 1',

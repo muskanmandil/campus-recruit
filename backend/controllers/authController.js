@@ -46,6 +46,7 @@ exports.signup = async (req, res) => {
             });
         });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: err });
     }
 }
@@ -77,6 +78,7 @@ exports.verify = async (req, res) => {
 
         });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: err });
     }
 }
@@ -92,8 +94,8 @@ exports.login = async (req, res) => {
         await pool.query("DELETE FROM otps WHERE email = $1", [email]);
 
         bcrypt.compare(password, user.rows[0].password, (err, result) => {
-            if (err) return res.status(500).json({ message: "Error while comparing passwords" });
-
+            if (err) return res.status(500).json({ message: "Error while comparing passwords" }); 
+            
             if (result) {
                 const token = jwt.sign({ institute_email: user.rows[0].institute_email, role: user.rows[0].role }, jwtKey);
                 return res.status(200).json({ message: "Logged in successfully", token, role: user.rows[0].role });
@@ -102,6 +104,7 @@ exports.login = async (req, res) => {
             }
         });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: err });
     }
 }
@@ -137,6 +140,7 @@ exports.forgotPassword = async (req, res) => {
         });
 
     } catch (err) {
+        console.error(err);
         return res.status(500).json({ message: err });
     }
 }
@@ -154,6 +158,7 @@ exports.newPassword = async (req, res) => {
             return res.status(200).json({ message: "Password changed successfully" });
         });
     } catch (err) {
+        console.error(err);
         return res.status(500).json({ message: err });
     }
 };
@@ -178,6 +183,7 @@ exports.changePassword = async (req, res) => {
             });
         })
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: err });
     }
 }

@@ -67,7 +67,8 @@ CREATE TABLE events (
     speaker_name TEXT NOT NULL,
     company_name TEXT NOT NULL,
     date TIMESTAMP NOT NULL,
-    description TEXT
+    description TEXT,
+    link TEXT,
 );
 
 <!-- delete otps as expires_at timestamp becomes now -->

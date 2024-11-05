@@ -1,77 +1,52 @@
 import React, { useEffect, useState } from "react";
-import {
-  Typography,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Grid,
-  Box,
-  Collapse,
-  Modal,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-} from "@mui/material";
-import { Link as RouterLink } from "react-router-dom";
+import { Typography, Card, CardContent, CardActions, Button, Grid, Box, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
+import { toast } from "react-toastify";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DescriptionIcon from "@mui/icons-material/Description";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import CloseIcon from "@mui/icons-material/Close";
+import moment from "moment";
 
-function HomePage() {
+function Home() {
+  const [companies, setCompanies] = useState();
   const [expanded, setExpanded] = useState({});
-  const [companyData, setCompanyData] = useState();
-  const [openModal, setOpenModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [popup, setPopup] = useState(false);
   const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const response = await fetch(`${backendUrl}/company/all`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-          setCompanyData(data.companies);
-          console.log(data.companies);
-        } else {
-          alert(data.message);
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
     fetchCompanies();
-  }, [backendUrl]);
+  },[]);
 
-  const handleExpandClick = (index) => {
-    setExpanded((prev) => ({ ...prev, [index]: !prev[index] }));
+  const fetchCompanies = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${backendUrl}/company/all`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setCompanies(data.companies);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Server Error");
+    }
+    setLoading(false);
   };
 
-  const dateFormat = (date) => {
-    const deadlineDate = new Date(date);
-
-    const day = String(deadlineDate.getDate()).padStart(2, "0");
-    const month = String(deadlineDate.getMonth() + 1).padStart(2, "0");
-    const year = deadlineDate.getFullYear();
-
-    let hours = deadlineDate.getHours();
-    const minutes = String(deadlineDate.getMinutes()).padStart(2, "0");
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-
-    const formattedDeadline = `${hours}:${minutes} ${ampm} (${day}-${month}-${year})`;
-    return formattedDeadline;
+  const handleExpand = (idx) => {
+    setExpanded((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   const getFileIcon = (extension) => {
@@ -86,28 +61,47 @@ function HomePage() {
     }
   };
 
-  const handleApplyClick = (company) => {
-    setSelectedCompany(company);
-    setOpenModal(true);
+  const openPopup = () => {
+    setPopup(true);
+    setFile(null);
   };
 
-  const handleFileChange = (event) => {
-    const uploadedFile = event.target.files[0];
-    if (
-      uploadedFile &&
-      uploadedFile.type === "application/pdf" &&
-      uploadedFile.size <= 2 * 1024 * 1024
-    ) {
-      setFile(uploadedFile);
-    } else {
-      alert("Please upload a PDF file of up to 2MB.");
-      event.target.value = null;
+  const closePopup = () => {
+    setPopup(false);
+    setFile(null);
+  };
+
+  const handleApply = (company) => {
+    setSelectedCompany(company);
+    openPopup();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) {
+      toast.error("Upload a file");
+      return;
     }
+
+    if (!file.type.match("application/pdf")) {
+      toast.error("Please upload a PDF file only");
+      e.target.value = null;
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Please select a PDF file of less than 2MB");
+      e.target.value = null;
+      return;
+    }
+
+    setFile(file);
   };
 
   const applyToCompany = async () => {
     if (!file) {
-      alert("Please upload your resume.");
+      toast.error("Please upload your resume.");
       return;
     }
 
@@ -115,6 +109,8 @@ function HomePage() {
     formData.append("company_name", selectedCompany.company_name);
     formData.append("role", selectedCompany.role);
     formData.append("resume", file);
+
+    setSubmitting(true);
 
     try {
       const response = await fetch(`${backendUrl}/company/apply`, {
@@ -128,54 +124,70 @@ function HomePage() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(data.message);
-        console.log(data);
-        setOpenModal(false);
-        setFile(null);
+        toast.success(data.message);
+        closePopup();
       } else {
-        alert(data.message);
+        toast.error(data.message);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      toast.error("Server Error");
     }
+
+    setSubmitting(false);
   };
 
-  return (
+  return loading ? (
+    <>Fetching Companies...</>
+  ) : (
     <Box sx={{ flexGrow: 1, overflow: "auto", height: "calc(100vh - 64px)" }}>
       <Grid container spacing={3}>
-        {companyData?.map((company, index) => (
+        {companies?.map((company, index) => (
           <Grid item xs={12} key={index}>
             <Card sx={{ minWidth: 275, height: "100%" }}>
               <CardContent>
                 <Typography variant="h5" component="div">
                   {company.company_name}
                 </Typography>
+
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
                   {company.role}
                 </Typography>
+
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
                   Eligible Branches: {company.eligible_branch.join(" / ")}
                 </Typography>
+
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
                   CTC: ₹{Number(company.ctc).toLocaleString("en-IN")}
                 </Typography>
+
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
                   Location: {company.location.join(" / ")}
                 </Typography>
+
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  Deadline: {dateFormat(company.deadline)}
+                  Deadline:{" "}
+                  {moment(company.deadline).format("hh:mm A DD-MM-YYYY")}
                 </Typography>
-                Academic Eligiblity:
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  10th: {company.tenth_percentage}
+
+                <Typography variant="body2" color="text.secondary">
+                  Academic Eligiblity:
                 </Typography>
+
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  12th: {company.twelfth_percentage} or Diploma CGPA:{" "}
+                  • 10th: {company.tenth_percentage}%
+                </Typography>
+
+                <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                  • 12th: {company.twelfth_percentage}% or Diploma CGPA:{" "}
                   {company.diploma_cgpa}
                 </Typography>
+
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  UG CGPA: {company.ug_cgpa}
+                  • UG CGPA: {company.ug_cgpa}
                 </Typography>
+
                 <Collapse in={expanded[index] || false}>
                   {company.description && (
                     <div style={{ marginTop: "1rem" }}>
@@ -185,28 +197,20 @@ function HomePage() {
                       </Typography>
                     </div>
                   )}
+
                   {company.docs_attached &&
                     company.docs_attached.length > 0 && (
                       <div style={{ marginTop: "1rem" }}>
                         <Typography variant="subtitle1">
-                          Docs Attached:
+                          Attached Documents:
                         </Typography>
+
                         <ul style={{ paddingLeft: "1rem" }}>
                           {company.docs_attached.map((fileUrl, i) => {
                             const fileName = fileUrl.split("/").pop();
-                            const fileExtension = fileName
-                              .split(".")
-                              .pop()
-                              .toLowerCase();
-
+                            const fileExtension = fileName.split(".").pop().toLowerCase();
                             return (
-                              <li
-                                key={i}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                }}
-                              >
+                              <li key={i} style={{display: "flex", alignItems: "center"}}>
                                 {getFileIcon(fileExtension)}
                                 <Typography
                                   component="a"
@@ -229,28 +233,32 @@ function HomePage() {
                     )}
                 </Collapse>
               </CardContent>
+
               <CardActions>
-                <Button size="small" onClick={() => handleExpandClick(index)}>
+                <Button size="small" onClick={() => handleExpand(index)}>
                   {expanded[index] ? "View Less" : "View More"}
                 </Button>
-                <Button size="small" onClick={() => handleApplyClick(company)}>
-                  Apply
+
+                <Button size="small" onClick={() => handleApply(company)}>
+                  {submitting? 'Applying...' : 'Apply'}
                 </Button>
               </CardActions>
             </Card>
           </Grid>
         ))}
       </Grid>
-      <Dialog open={openModal} onClose={() => setOpenModal(false)}>
+
+      <Dialog open={popup} onClose={closePopup}>
         <DialogTitle>
           Upload Resume
           <IconButton
-            onClick={() => setOpenModal(false)}
+            onClick={closePopup}
             style={{ position: "absolute", right: 8, top: 8 }}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
+
         <DialogContent>
           <Typography>Select a PDF file (max 2MB) to upload:</Typography>
           <input
@@ -260,6 +268,7 @@ function HomePage() {
             style={{ marginTop: "10px" }}
           />
         </DialogContent>
+
         <DialogActions>
           <Button onClick={applyToCompany} variant="contained" color="primary">
             Apply
@@ -270,4 +279,4 @@ function HomePage() {
   );
 }
 
-export default HomePage;
+export default Home;
