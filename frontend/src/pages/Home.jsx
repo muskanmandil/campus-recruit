@@ -1,11 +1,29 @@
 import React, { useEffect, useState } from "react";
-import { Typography, Card, CardContent, CardActions, Button, Grid, Box, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
+import { Typography, Card, CardContent, CardActions, Button, Grid, Box, Collapse, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Chip, Divider} from "@mui/material";
+import { styled } from '@mui/material/styles';
 import { toast } from "react-toastify";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import DescriptionIcon from "@mui/icons-material/Description";
-import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import CloseIcon from "@mui/icons-material/Close";
+import { PictureAsPdf as PictureAsPdfIcon, Description as DescriptionIcon, InsertDriveFile as InsertDriveFileIcon, Close as CloseIcon, Work as WorkIcon, LocationOn as LocationOnIcon, School as SchoolIcon} from "@mui/icons-material";
 import moment from "moment";
+
+// Custom Styled Components
+const CompanyCard = styled(Card)(({ theme }) => ({
+  transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+  '&:hover': {
+    transform: 'scale(1.02)',
+    boxShadow: theme.shadows[10]
+  }
+}));
+
+const CompanyHeader = styled(Typography)(({ theme }) => ({
+  fontWeight: 'bold',
+  color: theme.palette.primary.main,
+  marginBottom: theme.spacing(1)
+}));
+
+const EligibilityChip = styled(Chip)(({ theme }) => ({
+  margin: theme.spacing(0.5),
+  fontWeight: 'bold'
+}));
 
 function Home() {
   const [companies, setCompanies] = useState();
@@ -52,12 +70,12 @@ function Home() {
   const getFileIcon = (extension) => {
     switch (extension) {
       case "pdf":
-        return <PictureAsPdfIcon />;
+        return <PictureAsPdfIcon color="error" />;
       case "doc":
       case "docx":
-        return <DescriptionIcon />;
+        return <DescriptionIcon color="primary" />;
       default:
-        return <InsertDriveFileIcon />;
+        return <InsertDriveFileIcon color="secondary" />;
     }
   };
 
@@ -138,139 +156,200 @@ function Home() {
   };
 
   return loading ? (
-    <>Fetching Companies...</>
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Typography variant="h4" color="primary">Fetching Companies...</Typography>
+    </Box>
   ) : (
-    <Box sx={{ flexGrow: 1, overflow: "auto", height: "calc(100vh - 64px)" }}>
+    <Box sx={{ 
+      flexGrow: 1, 
+      overflow: "auto", 
+      height: "calc(100vh - 64px)", 
+      backgroundColor: '#f4f4f4',
+      padding: 2 
+    }}>
       <Grid container spacing={3}>
         {companies?.map((company, index) => (
-          <Grid item xs={12} key={index}>
-            <Card sx={{ minWidth: 275, height: "100%" }}>
+          <Grid item xs={12} md={6} lg={4} key={index}>
+            <CompanyCard elevation={4}>
               <CardContent>
-                <Typography variant="h5" component="div">
+                <CompanyHeader variant="h5" gutterBottom>
+                  <WorkIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
                   {company.company_name}
-                </Typography>
+                </CompanyHeader>
 
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
                   {company.role}
                 </Typography>
 
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  Eligible Branches: {company.eligible_branch.join(" / ")}
+                <Divider sx={{ mb: 2 }} />
+
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  <EligibilityChip 
+                    icon={<SchoolIcon />} 
+                    label={`Branches: ${company.eligible_branch.join(" / ")}`} 
+                    color="primary" 
+                    variant="outlined" 
+                  />
+                  <EligibilityChip 
+                    icon={<LocationOnIcon />} 
+                    label={`Location: ${company.location.join(" / ")}`} 
+                    color="secondary" 
+                    variant="outlined" 
+                  />
+                </Box>
+
+                <Typography sx={{ mb: 1 }} color="text.primary">
+                  <strong>CTC:</strong> ₹{Number(company.ctc).toLocaleString("en-IN")}
                 </Typography>
 
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  CTC: ₹{Number(company.ctc).toLocaleString("en-IN")}
-                </Typography>
-
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  Location: {company.location.join(" / ")}
-                </Typography>
-
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  Deadline:{" "}
+                <Typography sx={{ mb: 1 }} color="text.primary">
+                  <strong>Application Deadline:</strong>{" "}
                   {moment(company.deadline).format("hh:mm A DD-MM-YYYY")}
                 </Typography>
 
-                <Typography variant="body2" color="text.secondary">
-                  Academic Eligiblity:
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Academic Eligibility:
                 </Typography>
 
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  • 10th: {company.tenth_percentage}%
-                </Typography>
-
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  • 12th: {company.twelfth_percentage}% or Diploma CGPA:{" "}
-                  {company.diploma_cgpa}
-                </Typography>
-
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  • UG CGPA: {company.ug_cgpa}
-                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <EligibilityChip 
+                    label={`10th: ${company.tenth_percentage}%`} 
+                    // color="info" 
+                    color="primary" 
+                    variant="outlined"
+                    size="small" 
+                  />
+                  <EligibilityChip 
+                    label={`12th: ${company.twelfth_percentage}%`} 
+                    color="info" 
+                    variant="outlined"
+                    size="small" 
+                  />
+                  <EligibilityChip 
+                    label={`Diploma CGPA: ${company.diploma_cgpa}`} 
+                    color="info" 
+                    variant="outlined"
+                    size="small" 
+                  />
+                  <EligibilityChip 
+                    label={`UG CGPA: ${company.ug_cgpa}`} 
+                    color="info" 
+                    // variant="outlined"
+                    size="small" 
+                  />
+                </Box>
 
                 <Collapse in={expanded[index] || false}>
                   {company.description && (
-                    <div style={{ marginTop: "1rem" }}>
-                      <Typography variant="subtitle1">Description:</Typography>
-                      <Typography variant="body2">
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Description:
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
                         {company.description}
                       </Typography>
-                    </div>
+                    </Box>
                   )}
 
-                  {company.docs_attached &&
-                    company.docs_attached.length > 0 && (
-                      <div style={{ marginTop: "1rem" }}>
-                        <Typography variant="subtitle1">
-                          Attached Documents:
-                        </Typography>
-
-                        <ul style={{ paddingLeft: "1rem" }}>
-                          {company.docs_attached.map((fileUrl, i) => {
-                            const fileName = fileUrl.split("/").pop();
-                            const fileExtension = fileName.split(".").pop().toLowerCase();
-                            return (
-                              <li key={i} style={{display: "flex", alignItems: "center"}}>
-                                {getFileIcon(fileExtension)}
-                                <Typography
-                                  component="a"
-                                  href={fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{
-                                    marginLeft: "0.5rem",
-                                    color: "#1976d2",
-                                    textDecoration: "none",
-                                  }}
-                                >
-                                  {fileName}
-                                </Typography>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    )}
+                  {company.docs_attached && company.docs_attached.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Attached Documents:
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {company.docs_attached.map((fileUrl, i) => {
+                          const fileName = fileUrl.split("/").pop();
+                          const fileExtension = fileName.split(".").pop().toLowerCase();
+                          return (
+                            <Box key={i} sx={{ display: "flex", alignItems: "center" }}>
+                              {getFileIcon(fileExtension)}
+                              <Typography
+                                component="a"
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{
+                                  ml: 1,
+                                  color: "primary.main",
+                                  textDecoration: "none",
+                                  '&:hover': {
+                                    textDecoration: 'underline'
+                                  }
+                                }}
+                              >
+                                {fileName}
+                              </Typography>
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </Box>
+                  )}
                 </Collapse>
               </CardContent>
 
-              <CardActions>
-                <Button size="small" onClick={() => handleExpand(index)}>
+              <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
+                <Button 
+                  size="small" 
+                  variant="outlined" 
+                  color="primary" 
+                  onClick={() => handleExpand(index)}
+                >
                   {expanded[index] ? "View Less" : "View More"}
                 </Button>
 
-                <Button size="small" onClick={() => handleApply(company)}>
+                <Button 
+                  size="small" 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={() => handleApply(company)}
+                  disabled={submitting}
+                >
                   Apply
                 </Button>
               </CardActions>
-            </Card>
+            </CompanyCard>
           </Grid>
         ))}
       </Grid>
 
-      <Dialog open={popup} onClose={closePopup}>
+      <Dialog open={popup} onClose={closePopup} maxWidth="xs" fullWidth>
         <DialogTitle>
           Upload Resume
           <IconButton
             onClick={closePopup}
-            style={{ position: "absolute", right: 8, top: 8 }}
+            sx={{ position: "absolute", right: 8, top: 8 }}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
 
         <DialogContent>
-          <Typography>Select a PDF file (max 2MB) to upload:</Typography>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Select a <strong>PDF file</strong> (max 2MB) to upload:
+          </Typography>
           <input
             type="file"
             accept=".pdf"
             onChange={handleFileChange}
-            style={{ marginTop: "10px" }}
+            style={{ 
+              marginTop: "10px", 
+              padding: "10px", 
+              border: "1px dashed #1976d2", 
+              borderRadius: "4px" 
+            }}
           />
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={applyToCompany} variant="contained" color="primary">
+          <Button 
+            onClick={applyToCompany} 
+            variant="contained" 
+            color="primary"
+            startIcon={<PictureAsPdfIcon />}
+          >
             {submitting ? 'Applying...' : 'Apply'}
           </Button>
         </DialogActions>

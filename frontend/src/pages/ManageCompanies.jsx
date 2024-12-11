@@ -1,6 +1,12 @@
+
 import React, { useState, useEffect } from "react";
-import { Box, Button, Card, CardContent, CardActions, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Grid, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction } from "@mui/material";
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, AttachFile as AttachFileIcon, Close as CloseIcon } from "@mui/icons-material";
+import { Box, Button, Card, CardContent, CardActions, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Grid, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction, Paper} from "@mui/material";
+import { 
+  Add as AddIcon, 
+  Edit as EditIcon, 
+  Delete as DeleteIcon, 
+  AttachFile as AttachFileIcon, Close as CloseIcon 
+} from "@mui/icons-material";
 import { toast } from "react-toastify";
 import moment from "moment";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
@@ -261,61 +267,128 @@ const ManageCompanies = () => {
   };
 
   return loading ? (
-    <>Fetching Companies...</>
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh',
+      backgroundColor: '#f0f2f5'
+    }}>
+      <Typography variant="h5" color="primary">
+        Fetching Companies...
+      </Typography>
+    </Box>
   ) : (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openPopup}>
+    <Paper 
+      elevation={3} 
+      sx={{ 
+        p: 4, 
+        m: 2, 
+        backgroundColor: '#f9fafb', 
+        borderRadius: 3 
+      }}
+    >
+      <Box sx={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center", 
+        mb: 4,
+        borderBottom: '2px solid #e0e0e0',
+        pb: 2
+      }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a1a2e' }}>
+          Company Management
+        </Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          startIcon={<AddIcon />} 
+          onClick={openPopup}
+          sx={{
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            '&:hover': {
+              backgroundColor: '#1976d2',
+              boxShadow: '0 6px 8px rgba(0,0,0,0.15)'
+            }
+          }}
+        >
           Add New Company
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={4}>
         {companies?.map((company, index) => (
-
           <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
+            <Card 
+              sx={{ 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                transition: 'transform 0.3s ease',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
+                }
+              }}
+              elevation={4}
+            >
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Typography 
+                  variant="h5" 
+                  gutterBottom 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#2c3e50',
+                    borderBottom: '2px solid #3498db',
+                    pb: 1
+                  }}
+                >
                   {company.company_name}
                 </Typography>
 
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  sx={{ mb: 0.5, fontStyle: 'italic' }}
+                >
+                  <strong>Role:</strong> {company.role}
+                </Typography>
+
+                <Typography 
+                  sx={{ mb: 1.5 }} 
+                  color="text.secondary"
+                >
+                  <strong>Eligible Branches:</strong> {company.eligible_branch.join(" / ")}
+                </Typography>
+
                 <Typography variant="body2" color="text.secondary">
-                  Role: {company.role}
+                  <strong>CTC:</strong> ₹{Number(company.ctc).toLocaleString("en-IN")}
                 </Typography>
 
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  Eligible Branches: {company.eligible_branch.join(" / ")}
+                  <strong>Location:</strong> {company.location.join(" / ")}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  CTC: ₹{Number(company.ctc).toLocaleString("en-IN")}
-                </Typography>
-
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  Location: {company.location.join(" / ")}
-                </Typography>
-
-                <Typography variant="body2" color="text.secondary">
-                  Deadline:{" "}
+                  <strong>Deadline:{" "}</strong>
                   {moment(company.deadline).format("hh:mm A DD-MM-YYYY")}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  Academic Eligiblity:
+                  <strong>Academic Eligiblity:</strong>
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  • 10th: {company.tenth_percentage}%
+                  <strong>• 10th:</strong> {company.tenth_percentage}%
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  • 12th: {company.twelfth_percentage}% or Diploma CGPA:{" "}
+                  <strong>• 12th:</strong> {company.twelfth_percentage}% or Diploma CGPA:{" "}
                   {company.diploma_cgpa}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  • UG CGPA: {company.ug_cgpa}
+                  <strong>• UG CGPA:</strong> {company.ug_cgpa}
                 </Typography>
 
                 {company.description && (
@@ -363,30 +436,46 @@ const ManageCompanies = () => {
                 )}
               </CardContent>
 
-              <CardActions>
-                <Button onClick={() => openEditor(index)} startIcon={<EditIcon />}>
+              <CardActions sx={{ 
+                justifyContent: 'space-between', 
+                borderTop: '1px solid #e0e0e0',
+                p: 2 
+              }}>
+                <Button 
+                  onClick={() => openEditor(index)} 
+                  startIcon={<EditIcon />}
+                  color="primary"
+                  variant="outlined"
+                >
                   Edit
                 </Button>
 
-                <Button variant="contained" component="label" startIcon={<AttachFileIcon />} onClick={()=>handleImport(company)}>
+                <Button 
+                  variant="contained" 
+                  component="label" 
+                  color="secondary"
+                  startIcon={<AttachFileIcon />} onClick={()=>handleImport(company)}
+                >
                   Import Data
                 </Button>
-
-                <Button onClick={() => handleExport(company)}>
-                  Export Data
-                </Button>
-
-                <IconButton onClick={() => setCompanies(companies.filter((_, i) => i !== index))}>
-                  <DeleteIcon />
-                </IconButton>
               </CardActions>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      <Dialog open={popup} onClose={closePopup}>
-
+      <Dialog 
+        open={popup} 
+        onClose={closePopup}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1
+          }
+        }}
+      >
         <DialogTitle>
           {editing ? "Edit Company" : "Add New Company"}
         </DialogTitle>
@@ -576,7 +665,7 @@ const ManageCompanies = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Paper>
   );
 };
 
