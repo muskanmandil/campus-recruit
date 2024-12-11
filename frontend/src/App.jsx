@@ -43,12 +43,16 @@ function AppRoutes() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/notifications" element={<Notifications />} />
-            <Route path="/manage-companies" element={<ManageCompanies />} />
-            <Route path="/manage-events" element={<ManageEvents />} />
+            {sessionStorage.getItem("role") !== "student" && (
+              <>
+                <Route path="/manage-companies" element={<ManageCompanies />} />
+                <Route path="/manage-events" element={<ManageEvents />} />
+              </>
+            )}
           </Routes>
         </Layout>
       )}
-      
+
       <ToastContainer
         position="top-right"
         autoClose={5000}
