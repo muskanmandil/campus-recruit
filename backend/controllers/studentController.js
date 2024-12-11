@@ -68,3 +68,52 @@ exports.createProfile = async (req, res) => {
         return res.status(500).json({ message: err });
     }
 }
+
+// exports.editProfile = async (req, res) => {
+//     const { institute_email } = req.user;
+
+//     const validFields = ['first_name', 'last_name', 'gender', 'college', 'course', 'branch', 'date_of_birth', 'year_of_passing', 'personal_email', 'contact_no', 'tenth_percentage', 'twelfth_percentage', 'diploma_cgpa', 'ug_cgpa', 'total_backlogs', 'active_backlogs'];
+//     const fieldsToUpdate = Object.keys(req.body).filter(field => validFields.includes(field));
+//     const valuesToUpdate = fieldsToUpdate.map(field => req.body[field]);
+
+//     if (fieldsToUpdate.length === 0 && !req.file) {
+//         return res.status(400).json({ message: "No valid fields provided for update." });
+//     }
+
+//     try {
+//         const resultSet = await pool.query('SELECT profile_id FROM users WHERE institute_email = $1', [institute_email]);
+//         if (resultSet.rows.length === 0) {
+//             return res.status(404).json({ message: "Profile not found" });
+//         }
+
+//         const profileId = resultSet.rows[0].profile_id;
+
+//         const dobIndex = fieldsToUpdate.indexOf('date_of_birth');
+//         if (dobIndex !== -1) {
+//             const formattedDob = moment(valuesToUpdate[dobIndex], 'DD-MM-YYYY').format('YYYY-MM-DD');
+//             valuesToUpdate[dobIndex] = formattedDob;
+//         }
+
+//         // Handle image upload if a new file is provided
+//         let imageUrl;
+//         if (req.file) {
+//             const imageKey = `students/${profileId}.jpg`;
+//             imageUrl = await uploadImage(req.file, imageKey, req.file.mimetype);
+//             fieldsToUpdate.push('image');
+//             valuesToUpdate.push(imageUrl);
+//         }
+
+//         // Dynamically build the SQL query
+//         const setClause = fieldsToUpdate.map((field, index) => `${field} = $${index + 1}`).join(', ');
+//         const query = `UPDATE students SET ${setClause} WHERE enrollment_no = $${fieldsToUpdate.length + 1}`;
+
+//         // Execute the update query
+//         await pool.query(query, [...valuesToUpdate, profileId]);
+
+//         return res.status(200).json({ message: "Profile updated successfully." });
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ message: "Error updating profile." });
+//     }
+// };

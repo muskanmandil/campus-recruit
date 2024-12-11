@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Button, Card, CardContent, CardActions, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Grid, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction } from "@mui/material";
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, AttachFile as AttachFileIcon } from "@mui/icons-material";
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, AttachFile as AttachFileIcon, Close as CloseIcon } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import moment from "moment";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
@@ -10,6 +10,7 @@ import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 const ManageCompanies = () => {
   const [companies, setCompanies] = useState([]);
   const [popup, setPopup] = useState(false);
+  const [importPopup, setImportPopup] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [company, setCompany] = useState({
@@ -30,6 +31,7 @@ const ManageCompanies = () => {
   const [docs, setDocs] = useState([]);
   const [viewMore, setViewMore] = useState({});
   const [importFile, setImportFile] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -78,7 +80,6 @@ const ManageCompanies = () => {
     setEditing(false);
     setEditingId(null);
     setDocs([]);
-    setImportFile(null);
   };
 
   const openEditor = (id) => {
@@ -113,7 +114,7 @@ const ManageCompanies = () => {
     }
   };
 
-  const handleFileUpload = (e) => {
+  const handleDocsUpload = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter((file) => file.size <= 10 * 1024 * 1024);
     if (validFiles.length < files.length) {
@@ -123,7 +124,7 @@ const ManageCompanies = () => {
     setDocs((prev) => [...prev, ...validFiles]);
   };
 
-  const handleRemoveFile = (idx) => {
+  const removeDocs = (idx) => {
     setDocs((prev) => prev.filter((_, i) => i !== idx));
   };
 
@@ -173,16 +174,32 @@ const ManageCompanies = () => {
     setSubmitting(false);
   };
 
-  const handleImport = async (company) => {
+  const openImportPopup = () => {
+    setImportPopup(true);
+    setImportFile(null);
+  };
+
+  const closeImportPopup = () => {
+    setImportPopup(false);
+    setImportFile(null);
+  };
+
+  const handleFileChange = (e) => {
+    setImportFile(e.target.files[0]);
+  };
+
+  const handleImport = (company) => {
+    setSelectedCompany(company);
+    openImportPopup();
+  }
+
+  const importData = async () => {
     if (!importFile) {
       toast.error("Please upload a file");
       return;
     }
 
-    if (
-      importFile.type !==
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    ) {
+    if (importFile.type !=="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
       toast.error("Please upload an Excel");
       return;
     }
@@ -194,7 +211,8 @@ const ManageCompanies = () => {
 
     const formData = new FormData();
     formData.append("file", importFile);
-    formData.append("company_name", company.company_name);
+    formData.append("company_name", selectedCompany.company_name);
+    setSubmitting(true);
 
     try {
       const response = await fetch(`${backendUrl}/company/import-data`, {
@@ -215,6 +233,7 @@ const ManageCompanies = () => {
       console.error(error);
       toast.error("Server Error");
     }
+    setSubmitting(false);
   };
 
   const handleExport = async (company) => {
@@ -349,9 +368,8 @@ const ManageCompanies = () => {
                   Edit
                 </Button>
 
-                <Button variant="contained" component="label" startIcon={<AttachFileIcon />}>
+                <Button variant="contained" component="label" startIcon={<AttachFileIcon />} onClick={()=>handleImport(company)}>
                   Import Data
-                  <input type="file" hidden multiple onChange={handleFileUpload} />
                 </Button>
 
                 <Button onClick={() => handleExport(company)}>
@@ -435,7 +453,7 @@ const ManageCompanies = () => {
           <Box sx={{ mt: 2 }}>
             <Button variant="contained" component="label" startIcon={<AttachFileIcon />} >
               Upload Documents
-              <input type="file" hidden multiple onChange={handleFileUpload} />
+              <input type="file" hidden multiple onChange={handleDocsUpload} />
             </Button>
 
             <List dense>
@@ -443,7 +461,7 @@ const ManageCompanies = () => {
                 <ListItem key={i}>
                   <ListItemText primary={file.name} />
                   <ListItemSecondaryAction>
-                    <IconButton edge="end" onClick={() => handleRemoveFile(i)}>
+                    <IconButton edge="end" onClick={() => removeDocs(i)}>
                       <DeleteIcon />
                     </IconButton>
                   </ListItemSecondaryAction>
@@ -528,6 +546,33 @@ const ManageCompanies = () => {
           <Button onClick={closePopup}>Cancel</Button>
           <Button onClick={handleSubmit} variant="contained">
             {submitting? 'Loading...' : editing ? "Update" : "Add"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={importPopup} onClose={closeImportPopup}>
+        <DialogTitle>
+          Upload File
+          <IconButton
+            onClick={closeImportPopup}
+            style={{ position: "absolute", right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography>Select a Excel file (max 10MB) to upload:</Typography>
+          <input
+            type="file"
+            onChange={handleFileChange}
+            style={{ marginTop: "10px" }}
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={importData} variant="contained" color="primary">
+            {submitting ? 'Importing...' : 'Import'}
           </Button>
         </DialogActions>
       </Dialog>

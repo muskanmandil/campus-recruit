@@ -240,7 +240,7 @@ function Home() {
                 </Button>
 
                 <Button size="small" onClick={() => handleApply(company)}>
-                  {submitting? 'Applying...' : 'Apply'}
+                  Apply
                 </Button>
               </CardActions>
             </Card>
@@ -271,7 +271,7 @@ function Home() {
 
         <DialogActions>
           <Button onClick={applyToCompany} variant="contained" color="primary">
-            Apply
+            {submitting ? 'Applying...' : 'Apply'}
           </Button>
         </DialogActions>
       </Dialog>

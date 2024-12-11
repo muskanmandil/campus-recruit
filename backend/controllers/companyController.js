@@ -169,6 +169,7 @@ exports.exportData = async (req, res) => {
 exports.importData = async (req, res) => {
     const { role } = req.user;
     const file = req.file;
+    const finalSelects = req.body.finalSelects;
     const company_name = toSnakeCase(req.body.company_name);
 
     if (role === 'student') return res.status(403).json({ message: "Access denied, coordinators and admins only" });
@@ -185,21 +186,61 @@ exports.importData = async (req, res) => {
         const resultSet = await pool.query(`SELECT enrollment_no, status FROM ${company_name}`);
         const applications = resultSet.rows;
 
-        const updates = [];
-        applications.forEach(app => {
-            if (enrollmentNumbers.includes(app.enrollment_no)) {
-                updates.push({ enrollment_no: app.enrollment_no, status: 'Shortlisted' });
-            } else {
-                updates.push({ enrollment_no: app.enrollment_no, status: 'Rejected' });
+        if (finalSelects) {
+            const updates = [];
+            const deletions = [];
+
+            // Determine updates and deletions
+            applications.forEach(app => {
+                if (enrollmentNumbers.includes(app.enrollment_no)) {
+                    updates.push(app.enrollment_no); // For "Selected" status
+                } else {
+                    deletions.push(app.enrollment_no); // For deletion
+                }
+            });
+
+            // Bulk update "Selected" status
+            if (updates.length > 0) {
+                await pool.query(
+                    `UPDATE ${company_name} SET status = 'Selected' WHERE enrollment_no = ANY($1)`,
+                    [updates]
+                );
             }
-        });
 
-        for (const update of updates) {
-            await pool.query(`UPDATE ${company_name} SET status = $1 WHERE enrollment_no = $2`, [update.status, update.enrollment_no]);
+            // Bulk delete unmatched rows
+            if (deletions.length > 0) {
+                await pool.query(
+                    `DELETE FROM ${company_name} WHERE enrollment_no = ANY($1)`,
+                    [deletions]
+                );
+            }
+
+            return res.status(200).json({ message: "Final selections updated successfully." });
+
+
+        } else {
+            // Shortlist/Reject logic
+            const updates = [];
+
+            applications.forEach(app => {
+                if (enrollmentNumbers.includes(app.enrollment_no)) {
+                    updates.push({ enrollment_no: app.enrollment_no, status: 'Shortlisted' });
+                } else {
+                    updates.push({ enrollment_no: app.enrollment_no, status: 'Rejected' });
+                }
+            });
+
+            // Execute updates
+            for (const update of updates) {
+                await pool.query(
+                    `UPDATE ${company_name} SET status = $1 WHERE enrollment_no = $2`,
+                    [update.status, update.enrollment_no]
+                );
+            }
+
+            return res.status(200).json({ message: "Data imported and statuses updated successfully." });
         }
-
-        return res.status(200).json({ message: "Data imported and statuses updated successfully." });
-    } catch (error) {
+    } catch (err) {
         console.error(err);
         return res.status(500).json({ message: err });
     }

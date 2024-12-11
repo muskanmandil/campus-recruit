@@ -9,9 +9,9 @@ const saltRounds = 10;
 exports.signup = async (req, res) => {
     const { email, password } = req.body;
 
-    // const collegeDomainRegex = /^[a-zA-Z0-9._%+-]+@ietdavv\.edu\.in$/;
-    // if (!collegeDomainRegex.test(email))
-    //     return res.status(400).json({ message: "Only emails from @ietdavv.edu.in are allowed to create an account" });
+    const collegeDomainRegex = /^[a-zA-Z0-9._%+-]+@ietdavv\.edu\.in$/;
+    if (!collegeDomainRegex.test(email))
+        return res.status(400).json({ message: "Only emails from @ietdavv.edu.in are allowed to create an account" });
 
     try {
         const checkUser = await pool.query("SELECT * FROM users WHERE institute_email = $1", [email]);
