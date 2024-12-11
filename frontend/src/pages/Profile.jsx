@@ -164,58 +164,18 @@ function Profile() {
     reader.readAsDataURL(file);
   };
 
-  // const handleSave = async (e) => {
-  //   e.preventDefault();
-  //   const formattedDate = dayjs(profile.date_of_birth, "DD-MM-YYYY").format("YYYY-MM-DD");
-  //   setSubmitting(true);
-  //   try {
-
-  //     const formData = new FormData();
-  //     if (profileImage) {
-  //       if (profileImage.size > 1024 * 1024) {
-  //         alert('Image size should be less than 1MB');
-  //         return;
-  //       }
-  //       formData.append('image', profileImage);
-  //     }
-
-  //     // Append other form data
-  //     Object.keys(profile).forEach(key => {
-  //       if (key !== 'image') {
-  //         formData.append(key, profile[key]);
-  //       }
-  //     });
-
-  //     const response = await fetch(`${backendUrl}/student/profile`, {
-  //       method: "POST",
-  //       headers: {
-  //         "auth-token": sessionStorage.getItem("token"),
-  //       },
-  //       body: formData,
-  //     });
-
-  //     const data = await response.json();
-
-  //     if (response.ok) {
-  //       toast.success(data.message);
-  //       setEditing(false);
-  //     } else {
-  //       toast.error(data.message);
-  //     }
-  //   } catch (error) {
-  //     console.error(error);
-  //     toast.error("Server error");
-  //   } finally {
-  //     setSubmitting(false);
-  //   }
-  // };
+  const handleLogout = () => {
+    toast.success("User Logged out successfully");
+    sessionStorage.clear();
+    window.location.href = "/";
+  };
 
   return (
     <ThemeProvider theme={theme}>
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
         {loading ? (
           <Typography variant="h6" color="primary" sx={{ p: 3 }}>
-             Fetching Profile...
+            Fetching Profile...
           </Typography>
         ) : (
           <Box sx={{ p: 3, backgroundColor: theme.palette.background.default }}>
@@ -572,7 +532,7 @@ function Profile() {
             </Paper>
 
             <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-              {editing ? (
+              {/* {editing ? (
                 <Button
                   variant="contained"
                   color="primary"
@@ -581,17 +541,15 @@ function Profile() {
                 >
                   {submitting ? "Saving..." : "Save Profile"}
                 </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  // startIcon={<Edit />}
-                  onClick={toggleEdit}
-                >
-                  {/* Edit Profile */}
-                  logout
-                </Button>
-              )}
+              ) : ( */}
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+              {/* )} */}
             </Box>
           </Box>
         )}

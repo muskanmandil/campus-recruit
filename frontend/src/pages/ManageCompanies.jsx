@@ -1,16 +1,40 @@
-
 import React, { useState, useEffect } from "react";
-import { Box, Button, Card, CardContent, CardActions, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Grid, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction, Paper} from "@mui/material";
-import { 
-  Add as AddIcon, 
-  Edit as EditIcon, 
-  Delete as DeleteIcon, 
-  AttachFile as AttachFileIcon, 
-  Close as CloseIcon 
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardActions,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Typography,
+  Grid,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Paper,
+  Checkbox,
+  FormControlLabel,
+} from "@mui/material";
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  AttachFile as AttachFileIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import moment from "moment";
-import {PictureAsPdf as PictureAsPdfIcon, Description as DescriptionIcon, InsertDriveFile as InsertDriveFileIcon} from "@mui/icons-material";
+import {
+  PictureAsPdf as PictureAsPdfIcon,
+  Description as DescriptionIcon,
+  InsertDriveFile as InsertDriveFileIcon,
+} from "@mui/icons-material";
 
 const ManageCompanies = () => {
   const [companies, setCompanies] = useState([]);
@@ -37,6 +61,7 @@ const ManageCompanies = () => {
   const [viewMore, setViewMore] = useState({});
   const [importFile, setImportFile] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [finalSelects, setFinalSelects] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -44,7 +69,7 @@ const ManageCompanies = () => {
 
   useEffect(() => {
     fetchCompanies();
-  },[]);
+  }, []);
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -106,6 +131,10 @@ const ManageCompanies = () => {
     } else {
       setCompany({ ...company, [name]: value });
     }
+  };
+
+  const handleCheckboxChange = (e) => {
+    setFinalSelects(e.target.checked);
   };
 
   const getFileIcon = (extension) => {
@@ -197,7 +226,7 @@ const ManageCompanies = () => {
   const handleImport = (company) => {
     setSelectedCompany(company);
     openImportPopup();
-  }
+  };
 
   const importData = async () => {
     if (!importFile) {
@@ -205,7 +234,10 @@ const ManageCompanies = () => {
       return;
     }
 
-    if (importFile.type !=="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+    if (
+      importFile.type !==
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ) {
       toast.error("Please upload an Excel");
       return;
     }
@@ -217,6 +249,7 @@ const ManageCompanies = () => {
 
     const formData = new FormData();
     formData.append("file", importFile);
+    formData.append("finalSelects", finalSelects);
     formData.append("company_name", selectedCompany.company_name);
     setSubmitting(true);
 
@@ -240,6 +273,7 @@ const ManageCompanies = () => {
       toast.error("Server Error");
     }
     setSubmitting(false);
+    closeImportPopup();
   };
 
   const handleExport = async (company) => {
@@ -267,49 +301,53 @@ const ManageCompanies = () => {
   };
 
   return loading ? (
-    <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh',
-      backgroundColor: '#f0f2f5'
-    }}>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        backgroundColor: "#f0f2f5",
+      }}
+    >
       <Typography variant="h5" color="primary">
         Fetching Companies...
       </Typography>
     </Box>
   ) : (
-    <Paper 
-      elevation={3} 
-      sx={{ 
-        p: 4, 
-        m: 2, 
-        backgroundColor: '#f9fafb', 
-        borderRadius: 3 
+    <Paper
+      elevation={3}
+      sx={{
+        p: 4,
+        m: 2,
+        backgroundColor: "#f9fafb",
+        borderRadius: 3,
       }}
     >
-      <Box sx={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        mb: 4,
-        borderBottom: '2px solid #e0e0e0',
-        pb: 2
-      }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a1a2e' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+          borderBottom: "2px solid #e0e0e0",
+          pb: 2,
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a1a2e" }}>
           Company Management
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<AddIcon />} 
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
           onClick={openPopup}
           sx={{
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            '&:hover': {
-              backgroundColor: '#1976d2',
-              boxShadow: '0 6px 8px rgba(0,0,0,0.15)'
-            }
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            "&:hover": {
+              backgroundColor: "#1976d2",
+              boxShadow: "0 6px 8px rgba(0,0,0,0.15)",
+            },
           }}
         >
           Add New Company
@@ -318,50 +356,50 @@ const ManageCompanies = () => {
 
       <Grid container spacing={3}>
         {companies?.map((company, index) => (
-
           <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card sx={{ 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column',
-                transition: 'transform 0.3s ease',
-                '&:hover': {
-                  transform: 'scale(1.02)',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
-                }
+            <Card
+              sx={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                transition: "transform 0.3s ease",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                  boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
+                },
               }}
-              elevation={4}>
+              elevation={4}
+            >
               <CardContent sx={{ flexGrow: 1 }}>
-              <Typography 
-                  variant="h5" 
-                  gutterBottom 
-                  sx={{ 
-                    fontWeight: 'bold', 
-                    color: '#2c3e50',
-                    borderBottom: '2px solid #3498db',
-                    pb: 1
+                <Typography
+                  variant="h5"
+                  gutterBottom
+                  sx={{
+                    fontWeight: "bold",
+                    color: "#2c3e50",
+                    borderBottom: "2px solid #3498db",
+                    pb: 1,
                   }}
                 >
                   {company.company_name}
                 </Typography>
 
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary" 
-                  sx={{ mb: 0.5, fontStyle: 'italic' }}
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 0.5, fontStyle: "italic" }}
                 >
                   <strong>Role:</strong> {company.role}
                 </Typography>
 
-                <Typography 
-                  sx={{ mb: 1.5 }} 
-                  color="text.secondary"
-                >
-                  <strong>Eligible Branches:</strong> {company.eligible_branch.join(" / ")}
+                <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                  <strong>Eligible Branches:</strong>{" "}
+                  {company.eligible_branch.join(" / ")}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>CTC:</strong> ₹{Number(company.ctc).toLocaleString("en-IN")}
+                  <strong>CTC:</strong> ₹
+                  {Number(company.ctc).toLocaleString("en-IN")}
                 </Typography>
 
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
@@ -369,7 +407,7 @@ const ManageCompanies = () => {
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>Deadline:{" "}</strong>
+                  <strong>Deadline: </strong>
                   {moment(company.deadline).format("hh:mm A DD-MM-YYYY")}
                 </Typography>
 
@@ -382,8 +420,8 @@ const ManageCompanies = () => {
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>• 12th:</strong> {company.twelfth_percentage}% or Diploma CGPA:{" "}
-                  {company.diploma_cgpa}
+                  <strong>• 12th:</strong> {company.twelfth_percentage}% or
+                  Diploma CGPA: {company.diploma_cgpa}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
@@ -393,7 +431,9 @@ const ManageCompanies = () => {
                 {company.description && (
                   <Typography variant="body2" color="text.secondary">
                     Description:{" "}
-                    {viewMore[index] ? company.description : `${company.description.slice(0, 50)}... `}
+                    {viewMore[index]
+                      ? company.description
+                      : `${company.description.slice(0, 50)}... `}
                     <Button size="small" onClick={() => toggleViewMore(index)}>
                       {viewMore[index] ? "View Less" : "View More"}
                     </Button>
@@ -409,10 +449,16 @@ const ManageCompanies = () => {
                     <ul style={{ paddingLeft: "1rem" }}>
                       {company.docs_attached.map((fileUrl, i) => {
                         const fileName = fileUrl.split("/").pop();
-                        const fileExtension = fileName.split(".").pop().toLowerCase();
+                        const fileExtension = fileName
+                          .split(".")
+                          .pop()
+                          .toLowerCase();
 
                         return (
-                          <li key={i} style={{display: "flex", alignItems: "center"}}>
+                          <li
+                            key={i}
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
                             {getFileIcon(fileExtension)}
                             <Typography
                               component="a"
@@ -435,13 +481,15 @@ const ManageCompanies = () => {
                 )}
               </CardContent>
 
-              <CardActions sx={{ 
-                justifyContent: 'space-between', 
-                borderTop: '1px solid #e0e0e0',
-                p: 2 
-              }}>
-                <Button 
-                  onClick={() => openEditor(index)} 
+              <CardActions
+                sx={{
+                  justifyContent: "space-between",
+                  borderTop: "1px solid #e0e0e0",
+                  p: 2,
+                }}
+              >
+                <Button
+                  onClick={() => openEditor(index)}
                   startIcon={<EditIcon />}
                   color="primary"
                   variant="outlined"
@@ -449,11 +497,12 @@ const ManageCompanies = () => {
                   Edit
                 </Button>
 
-                <Button 
-                  variant="contained" 
-                  component="label" 
+                <Button
+                  variant="contained"
+                  component="label"
                   color="secondary"
-                  startIcon={<AttachFileIcon />} onClick={()=>handleImport(company)}
+                  startIcon={<AttachFileIcon />}
+                  onClick={() => handleImport(company)}
                 >
                   Import Data
                 </Button>
@@ -462,7 +511,11 @@ const ManageCompanies = () => {
                   Export Data
                 </Button>
 
-                <IconButton onClick={() => setCompanies(companies.filter((_, i) => i !== index))}>
+                <IconButton
+                  onClick={() =>
+                    setCompanies(companies.filter((_, i) => i !== index))
+                  }
+                >
                   <DeleteIcon />
                 </IconButton>
               </CardActions>
@@ -471,16 +524,16 @@ const ManageCompanies = () => {
         ))}
       </Grid>
 
-      <Dialog 
-        open={popup} 
+      <Dialog
+        open={popup}
         onClose={closePopup}
         maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 3,
-            p: 1
-          }
+            p: 1,
+          },
         }}
       >
         <DialogTitle>
@@ -547,7 +600,11 @@ const ManageCompanies = () => {
           />
 
           <Box sx={{ mt: 2 }}>
-            <Button variant="contained" component="label" startIcon={<AttachFileIcon />} >
+            <Button
+              variant="contained"
+              component="label"
+              startIcon={<AttachFileIcon />}
+            >
               Upload Documents
               <input type="file" hidden multiple onChange={handleDocsUpload} />
             </Button>
@@ -641,7 +698,7 @@ const ManageCompanies = () => {
         <DialogActions>
           <Button onClick={closePopup}>Cancel</Button>
           <Button onClick={handleSubmit} variant="contained">
-            {submitting? 'Loading...' : editing ? "Update" : "Add"}
+            {submitting ? "Loading..." : editing ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -658,17 +715,27 @@ const ManageCompanies = () => {
         </DialogTitle>
 
         <DialogContent>
-          <Typography>Select a Excel file (max 10MB) to upload:</Typography>
-          <input
-            type="file"
-            onChange={handleFileChange}
-            style={{ marginTop: "10px" }}
-          />
+          <Typography>Select an Excel file (max 10MB) to upload:</Typography>
+          <div style={{ marginTop: "10px" }}>
+            <input type="file" onChange={handleFileChange} />
+          </div>
+          <div style={{ marginTop: "10px" }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={finalSelects}
+                  onChange={handleCheckboxChange}
+                  color="primary"
+                />
+              }
+              label="Final Selects"
+            />
+          </div>
         </DialogContent>
 
         <DialogActions>
           <Button onClick={importData} variant="contained" color="primary">
-            {submitting ? 'Importing...' : 'Import'}
+            {submitting ? "Importing..." : "Import"}
           </Button>
         </DialogActions>
       </Dialog>
