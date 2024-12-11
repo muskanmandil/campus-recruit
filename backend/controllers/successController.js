@@ -15,13 +15,14 @@ exports.getSuccess = async (req, res) => {
                 const res2 = await pool.query(`
                     SELECT 
                         s.first_name || ' ' || s.last_name AS name,
-                        s.branch
+                        s.branch,
+                        s.image
                     FROM ${company} AS c
                     JOIN students AS s ON c.enrollment_no = s.enrollment_no
                     WHERE c.status = $1
                 `, ['Selected']);
 
-                results.push({ company, students: res2.rows });
+                finalSelects.push({ company, students: res2.rows });
             } catch (err) {
                 console.error(err);
                 res.status(500).json({ message: err });
