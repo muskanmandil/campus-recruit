@@ -1,13 +1,77 @@
 import React, { useEffect, useState } from "react";
-import { Box, Avatar, Typography, TextField, Grid, Paper, Select, MenuItem, Button, InputLabel, FormControl, InputAdornment, Stack } from "@mui/material";
+import {
+  Box,
+  Avatar,
+  Typography,
+  TextField,
+  Grid,
+  Paper,
+  Select,
+  MenuItem,
+  Button,
+  InputLabel,
+  FormControl,
+  InputAdornment,
+  Stack,
+  createTheme,
+  ThemeProvider,
+} from "@mui/material";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { AddAPhoto } from "@mui/icons-material";
+import { AddAPhoto, Edit, Save } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import "dayjs/locale/en-gb";
 
 dayjs.locale("en-gb");
+
+// Custom Theme
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#1976d2", // Deep Blue
+      light: "#42a5f5", // Lighter Blue
+    },
+    background: {
+      default: "#f4f4f4",
+      paper: "#ffffff",
+    },
+    text: {
+      primary: "#333333",
+    },
+  },
+  typography: {
+    fontFamily: "Roboto, Arial, sans-serif",
+    h6: {
+      fontWeight: 600,
+      color: "#1976d2",
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          "& label.Mui-focused": {
+            color: "#1976d2",
+          },
+          "& .MuiOutlinedInput-root": {
+            "&.Mui-focused fieldset": {
+              borderColor: "#1976d2",
+            },
+          },
+        },
+      },
+    },
+  },
+});
 
 const genders = ["Male", "Female"];
 const colleges = ["IET", "IIPS", "SCSIT", "SOCS", "SDSF"];
@@ -26,7 +90,7 @@ function Profile() {
 
   useEffect(() => {
     fetchProfile();
-  },[]);
+  }, []);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -66,7 +130,10 @@ function Profile() {
   };
 
   const handleDateChange = (date) => {
-    setProfile((prevData) => ({...prevData, date_of_birth: date ? dayjs(date).format("DD-MM-YYYY") : "" }));
+    setProfile((prevData) => ({
+      ...prevData,
+      date_of_birth: date ? dayjs(date).format("DD-MM-YYYY") : "",
+    }));
   };
 
   const handleImageChange = (e) => {
@@ -143,345 +210,392 @@ function Profile() {
   //   }
   // };
 
-  return loading ? (
-    <>Fetching Profile...</>
-  ) : (
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
-      <Box sx={{ p: 3 }}>
-        <Paper elevation={3} sx={{ p: 3 }}>
-
-          <Stack direction="column" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-            <Avatar src={profileImagePreview} sx={{ width: 120, height: 120 }}/>
-
-            {editing && (
-              <Button variant="outlined" component="label" startIcon={<AddAPhoto />}>
-                Upload Photo
-                <input type="file" hidden accept="image/*" onChange={handleImageChange}/>
-              </Button>
-            )}
-          </Stack>
-
-          <Typography variant="h6" color="primary" gutterBottom>
-            Personal Information
+  return (
+    <ThemeProvider theme={theme}>
+      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
+        {loading ? (
+          <Typography variant="h6" color="primary" sx={{ p: 3 }}>
+            🔄 Fetching Profile...
           </Typography>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="First Name"
-                name="first_name"
-                value={profile?.first_name || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Last Name"
-                name="last_name"
-                value={profile?.last_name || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Gender</InputLabel>
-                <Select
-                  label="Gender"
-                  name="gender"
-                  value={profile?.gender || ""}
-                  onChange={handleChange}
-                  disabled={!editing}
-                  required
-                >
-                  {genders.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <DatePicker
-                label="Date of Birth"
-                value={profile?.date_of_birth ? dayjs(profile.date_of_birth, "DD-MM-YYYY") : null}
-                onChange={handleDateChange}
-                disabled={!editing}
-                format="DD-MM-YYYY"
-                sx={{ width: "100%" }}
-                renderInput={(params) => (
-                  <TextField {...params} required fullWidth />
+        ) : (
+          <Box sx={{ p: 3, backgroundColor: theme.palette.background.default }}>
+            {/* Personal Information Section */}
+            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+              {/* Profile Image Section */}
+              <Stack
+                direction="column"
+                alignItems="center"
+                spacing={2}
+                sx={{ mb: 3 }}
+              >
+                <Avatar
+                  src={profileImagePreview}
+                  sx={{
+                    width: 150,
+                    height: 150,
+                    border: "4px solid",
+                    borderColor: theme.palette.primary.light,
+                  }}
+                />
+                {editing && (
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<AddAPhoto />}
+                    color="primary"
+                  >
+                    Upload Photo
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </Button>
                 )}
-              />
-            </Grid>
+              </Stack>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Personal Email"
-                name="personal_email"
-                type="email"
-                value={profile?.personal_email || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+              <Typography variant="h6" color="primary" gutterBottom>
+                Personal Information
+              </Typography>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Contact No."
-                name="contact_no"
-                type="tel"
-                value={profile?.contact_no || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                inputProps={{ maxLength: 10 }}
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
-        </Paper>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="First Name"
+                    name="first_name"
+                    value={profile?.first_name || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
 
-        <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
-          <Typography variant="h6" color="primary" gutterBottom>
-            Educational Details
-          </Typography>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Last Name"
+                    name="last_name"
+                    value={profile?.last_name || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Enrollment No."
-                name="enrollment_no"
-                value={profile?.enrollment_no || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Gender</InputLabel>
+                    <Select
+                      label="Gender"
+                      name="gender"
+                      value={profile?.gender || ""}
+                      onChange={handleChange}
+                      disabled={!editing}
+                      required
+                    >
+                      {genders.map((option) => (
+                        <MenuItem key={option} value={option}>
+                          {option}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>College</InputLabel>
-                <Select
-                  label="College"
-                  name="college"
-                  value={profile?.college || ""}
-                  onChange={handleChange}
-                  disabled={!editing}
-                  required
+                <Grid item xs={12} sm={6}>
+                  <DatePicker
+                    label="Date of Birth"
+                    value={
+                      profile?.date_of_birth
+                        ? dayjs(profile.date_of_birth, "DD-MM-YYYY")
+                        : null
+                    }
+                    onChange={handleDateChange}
+                    disabled={!editing}
+                    format="DD-MM-YYYY"
+                    sx={{ width: "100%" }}
+                    renderInput={(params) => (
+                      <TextField {...params} required fullWidth />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Personal Email"
+                    name="personal_email"
+                    type="email"
+                    value={profile?.personal_email || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Contact No."
+                    name="contact_no"
+                    type="tel"
+                    value={profile?.contact_no || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    inputProps={{ maxLength: 10 }}
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
+
+            <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
+              <Typography variant="h6" color="primary" gutterBottom>
+                Educational Details
+              </Typography>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Enrollment No."
+                    name="enrollment_no"
+                    value={profile?.enrollment_no || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>College</InputLabel>
+                    <Select
+                      label="College"
+                      name="college"
+                      value={profile?.college || ""}
+                      onChange={handleChange}
+                      disabled={!editing}
+                      required
+                    >
+                      {colleges.map((college) => (
+                        <MenuItem key={college} value={college}>
+                          {college}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Course</InputLabel>
+                    <Select
+                      label="Course"
+                      name="course"
+                      value={profile?.course || ""}
+                      onChange={handleChange}
+                      disabled={!editing}
+                      required
+                    >
+                      {courses.map((course) => (
+                        <MenuItem key={course} value={course}>
+                          {course}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Branch</InputLabel>
+                    <Select
+                      label="Branch"
+                      name="branch"
+                      value={profile?.branch || ""}
+                      onChange={handleChange}
+                      disabled={!editing}
+                      required
+                    >
+                      {branches.map((branch) => (
+                        <MenuItem key={branch} value={branch}>
+                          {branch}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Year of Passing"
+                    name="year_of_passing"
+                    type="number"
+                    value={profile?.year_of_passing || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    inputProps={{ min: 2010, max: 2100 }}
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Typography variant="h6" color="primary" sx={{ mt: 4, mb: 2 }}>
+                Academic Performance
+              </Typography>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Tenth Percentage"
+                    name="tenth_percentage"
+                    type="number"
+                    value={profile?.tenth_percentage || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">%</InputAdornment>
+                      ),
+                      inputProps: { min: 0, max: 100, step: 0.01 },
+                    }}
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Twelfth Percentage"
+                    name="twelfth_percentage"
+                    type="number"
+                    value={profile?.twelfth_percentage || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required={!profile?.diploma_cgpa}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">%</InputAdornment>
+                      ),
+                      inputProps: { min: 0, max: 100, step: 0.01 },
+                    }}
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Diploma CGPA"
+                    name="diploma_cgpa"
+                    type="number"
+                    value={profile?.diploma_cgpa || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required={!profile?.twelfth_percentage}
+                    InputProps={{
+                      inputProps: { min: 0, max: 10, step: 0.01 },
+                    }}
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="UG CGPA"
+                    name="ug_cgpa"
+                    type="number"
+                    value={profile?.ug_cgpa || ""}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    InputProps={{
+                      inputProps: { min: 0, max: 10, step: 0.01 },
+                    }}
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Total Backlogs"
+                    name="total_backlogs"
+                    type="number"
+                    value={profile?.total_backlogs || 0}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Active Backlogs"
+                    name="active_backlogs"
+                    type="number"
+                    value={profile?.active_backlogs || 0}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    required
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
+
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+              {editing ? (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<Save />}
+                  disabled={submitting}
                 >
-                  {colleges.map((college) => (
-                    <MenuItem key={college} value={college}>
-                      {college}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Course</InputLabel>
-                <Select
-                  label="Course"
-                  name="course"
-                  value={profile?.course || ""}
-                  onChange={handleChange}
-                  disabled={!editing}
-                  required
+                  {submitting ? "Saving..." : "Save Profile"}
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<Edit />}
+                  onClick={toggleEdit}
                 >
-                  {courses.map((course) => (
-                    <MenuItem key={course} value={course}>
-                      {course}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Branch</InputLabel>
-                <Select
-                  label="Branch"
-                  name="branch"
-                  value={profile?.branch || ""}
-                  onChange={handleChange}
-                  disabled={!editing}
-                  required
-                >
-                  {branches.map((branch) => (
-                    <MenuItem key={branch} value={branch}>
-                      {branch}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Year of Passing"
-                name="year_of_passing"
-                type="number"
-                value={profile?.year_of_passing || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                inputProps={{ min: 2010, max: 2100 }}
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
-
-          <Typography variant="h6" color="primary" sx={{ mt: 4, mb: 2 }}>
-            Academic Performance
-          </Typography>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Tenth Percentage"
-                name="tenth_percentage"
-                type="number"
-                value={profile?.tenth_percentage || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                InputProps={{
-                  endAdornment: (<InputAdornment position="end">%</InputAdornment>),
-                  inputProps: { min: 0, max: 100, step: 0.01 },
-                }}
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Twelfth Percentage"
-                name="twelfth_percentage"
-                type="number"
-                value={profile?.twelfth_percentage || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required={!profile?.diploma_cgpa}
-                InputProps={{
-                  endAdornment: (<InputAdornment position="end">%</InputAdornment>),
-                  inputProps: { min: 0, max: 100, step: 0.01 },
-                }}
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Diploma CGPA"
-                name="diploma_cgpa"
-                type="number"
-                value={profile?.diploma_cgpa || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required={!profile?.twelfth_percentage}
-                InputProps={{
-                  inputProps: { min: 0, max: 10, step: 0.01 },
-                }}
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="UG CGPA"
-                name="ug_cgpa"
-                type="number"
-                value={profile?.ug_cgpa || ""}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                InputProps={{
-                  inputProps: { min: 0, max: 10, step: 0.01 },
-                }}
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Total Backlogs"
-                name="total_backlogs"
-                type="number"
-                value={profile?.total_backlogs || 0}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Active Backlogs"
-                name="active_backlogs"
-                type="number"
-                value={profile?.active_backlogs || 0}
-                onChange={handleChange}
-                disabled={!editing}
-                required
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
-        </Paper>
-
-        <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-          {editing ? (
-            <Button variant="contained" onClick="" disabled={submitting} >
-              {submitting ? "Saving..." : "Save"}
-            </Button>
-          ) : (
-            <Button variant="contained" onClick={toggleEdit}>
-              Edit
-            </Button>
-          )}
-        </Box>
-      </Box>
-    </LocalizationProvider>
+                  Edit Profile
+                </Button>
+              )}
+            </Box>
+          </Box>
+        )}
+      </LocalizationProvider>
+    </ThemeProvider>
   );
 }
 
