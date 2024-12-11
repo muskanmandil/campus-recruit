@@ -1,30 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Box, 
-  Button, 
-  Card, 
-  CardContent, 
-  CardActions, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  TextField, 
-  Typography, 
-  Grid, 
-  IconButton,
-  Paper,
-  Chip
-} from "@mui/material";
-import { 
-  Add as AddIcon, 
-  Edit as EditIcon, 
-  Delete as DeleteIcon,
-  EventNote as EventNoteIcon,
-  Person as PersonIcon,
-  Business as BusinessIcon,
-  Link as LinkIcon
-} from "@mui/icons-material";
+import { Box, Button, Card, CardContent, CardActions, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Grid, IconButton,} from "@mui/material";
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,} from "@mui/icons-material";
 import { toast } from "react-toastify";
 import moment from "moment";
 
@@ -161,140 +137,70 @@ const ManageEvents = () => {
     setSubmitting(false);
   };
 
-  return loading ? (
-    <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh', 
-      typography: 'h4' 
-    }}>
-      Fetching Events...
-    </Box>
-  ):(
-    <Box sx={{ p: 3, backgroundColor: '#f5f5f5' }}>
-      <Box sx={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: 'center', 
-        mb: 3 
-      }}>
-        <Typography variant="h4" fontWeight="bold">
-          📅 Event Management
-        </Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
-          onClick={openPopup}
-          sx={{ 
-            backgroundColor: '#1976d2', 
-            '&:hover': { backgroundColor: '#115293' } 
-          }}
-        >
+  return loading ? (<>Fetching Events...</>):(
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={openPopup}>
           Add New Event
         </Button>
       </Box>
 
       <Grid container spacing={3}>
+
         {events.map((event) => (
           <Grid item xs={12} sm={6} md={4} key={event.event_id}>
-            <Paper 
-              elevation={3} 
-              sx={{ 
-                transition: 'transform 0.3s ease-in-out',
-                '&:hover': { 
-                  transform: 'scale(1.02)' 
-                } 
-              }}
-            >
-              <Card sx={{ borderRadius: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <EventNoteIcon sx={{ mr: 2, color: '#1976d2' }} />
-                    <Typography variant="h5" fontWeight="bold">
-                      {event.speaker_name}
-                    </Typography>
-                  </Box>
+            <Card>
+              <CardContent>
 
-                  <Box sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                    <BusinessIcon sx={{ mr: 2, color: '#1976d2' }} />
-                    <Typography variant="body1" color="text.secondary">
-                      <strong>Company:</strong> {event.company_name}
-                    </Typography>
-                  </Box>
+                <Typography variant="h5" gutterBottom>
+                  {event.speaker_name}
+                </Typography>
 
-                  <Box sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                    <PersonIcon sx={{ mr: 2, color: '#1976d2' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {moment(event.date).format("hh:mm A DD-MM-YYYY")}
-                    </Typography>
-                  </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Company: {event.company_name}
+                </Typography>
 
-                  <Box sx={{ mb: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Description:</strong>
-                      {expandedId === event.event_id ? (
-                        <> {event.description} </>
-                      ) : (
-                        <> {event.description.slice(0, 100)}... </>
-                      )}
+                <Typography variant="body2" color="text.secondary">
+                  {moment(event.date).format("hh:mm A DD-MM-YYYY")}
+                </Typography>
 
-                      <Button 
-                        size="small" 
-                        onClick={() => toggleDescriptionExpand(event.event_id)} 
-                        sx={{ 
-                          textTransform: "none", 
-                          ml: 1,
-                          color: '#1976d2' 
-                        }}
-                      >
-                        {expandedId === event.event_id ? "Show less" : "View more"}
-                      </Button>
-                    </Typography>
-                  </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Description:
+                  {expandedId === event.event_id ? (
+                    <>{event.description} </>
+                  ) : (
+                    <>{event.description.slice(0, 100)}...</>
+                  )}
 
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <LinkIcon sx={{ mr: 2, color: '#1976d2' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      Meeting Link:{" "}
-                      <a 
-                        href={event.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ color: '#1976d2', textDecoration: 'none' }}
-                      >
-                        Open Link
-                      </a>
-                    </Typography>
-                  </Box>
-                </CardContent>
-
-                <CardActions>
-                  <Button 
-                    onClick={() => openEditor(event.event_id)} 
-                    startIcon={<EditIcon />}
-                    sx={{ color: '#1976d2' }}
-                  >
-                    Edit
+                  <Button size="small" onClick={() => toggleDescriptionExpand(event.event_id)} sx={{ textTransform: "none", ml: 1 }}>
+                    {expandedId === event.event_id ? "Show less" : "View more"}
                   </Button>
-                  <Button 
-                    color="error" 
-                    onClick={() => cancelEvent(event.event_id)} 
-                    startIcon={<DeleteIcon />}
-                  >
-                    {submitting ? 'Deleting...' : 'Delete'}
-                  </Button>
-                </CardActions>
-              </Card>
-            </Paper>
+                </Typography>
+
+                <Typography variant="body2" color="text.secondary">
+                  Meeting Link:{" "}
+                  <a href={event.link} target="_blank" rel="noopener noreferrer">
+                    {event.link}
+                  </a>
+                </Typography>
+              </CardContent>
+
+              <CardActions>
+                <Button onClick={() => openEditor(event.event_id)} startIcon={<EditIcon />}>
+                  Edit
+                </Button>
+                <IconButton onClick={() => cancelEvent(event.event_id)}>
+                  <DeleteIcon />
+                  {submitting ? 'Deleting...': 'Delete'}
+                </IconButton>
+              </CardActions>
+            </Card>
           </Grid>
         ))}
       </Grid>
 
-      <Dialog open={popup} onClose={closePopup} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
-          {editing ? "Edit Event" : "Add New Event"}
-        </DialogTitle>
+      <Dialog open={popup} onClose={closePopup}>
+        <DialogTitle>{editing ? "Edit Event" : "Add New Event"}</DialogTitle>
 
         <DialogContent>
           <TextField
@@ -307,7 +213,6 @@ const ManageEvents = () => {
             variant="outlined"
             value={formData.speaker_name}
             onChange={handleChange}
-            sx={{ mb: 2 }}
           />
 
           <TextField
@@ -319,7 +224,6 @@ const ManageEvents = () => {
             variant="outlined"
             value={formData.company_name}
             onChange={handleChange}
-            sx={{ mb: 2 }}
           />
 
           <TextField
@@ -334,7 +238,6 @@ const ManageEvents = () => {
             InputLabelProps={{
               shrink: true,
             }}
-            sx={{ mb: 2 }}
           />
 
           <TextField
@@ -346,7 +249,6 @@ const ManageEvents = () => {
             variant="outlined"
             value={formData.link}
             onChange={handleChange}
-            sx={{ mb: 2 }}
           />
 
           <TextField
@@ -364,16 +266,9 @@ const ManageEvents = () => {
           />
         </DialogContent>
 
-        <DialogActions sx={{ backgroundColor: '#f0f0f0' }}>
+        <DialogActions>
           <Button onClick={closePopup}>Cancel</Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained"
-            sx={{ 
-              backgroundColor: '#1976d2', 
-              '&:hover': { backgroundColor: '#115293' } 
-            }}
-          >
+          <Button onClick={handleSubmit} variant="contained">
             {submitting ? "Loading..." : editing ? "Update" : "Add"}
           </Button>
         </DialogActions>

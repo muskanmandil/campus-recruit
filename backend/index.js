@@ -7,6 +7,7 @@ const companyRoutes = require('./routes/companyRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const analyticRoutes = require('./routes/analyticRoutes');
+const successRoutes = require('./routes/successRoutes');
 require('dotenv').config();
 
 pool.connect();
@@ -21,7 +22,7 @@ app.use('/api/company', companyRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/event', eventRoutes);
 app.use('/api/analytic', analyticRoutes);
-
+app.use('/api/success', successRoutes);
 
 
 const port = 4000;
