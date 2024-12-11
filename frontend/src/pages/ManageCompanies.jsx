@@ -9,9 +9,7 @@ import {
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import moment from "moment";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import DescriptionIcon from "@mui/icons-material/Description";
-import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+import {PictureAsPdf as PictureAsPdfIcon, Description as DescriptionIcon, InsertDriveFile as InsertDriveFileIcon} from "@mui/icons-material";
 
 const ManageCompanies = () => {
   const [companies, setCompanies] = useState([]);
@@ -267,82 +265,22 @@ const ManageCompanies = () => {
   };
 
   return loading ? (
-    <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh',
-      backgroundColor: '#f0f2f5'
-    }}>
-      <Typography variant="h5" color="primary">
-        Fetching Companies...
-      </Typography>
-    </Box>
+    <>Fetching Companies...</>
   ) : (
-    <Paper 
-      elevation={3} 
-      sx={{ 
-        p: 4, 
-        m: 2, 
-        backgroundColor: '#f9fafb', 
-        borderRadius: 3 
-      }}
-    >
-      <Box sx={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        mb: 4,
-        borderBottom: '2px solid #e0e0e0',
-        pb: 2
-      }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a1a2e' }}>
-          Company Management
-        </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<AddIcon />} 
-          onClick={openPopup}
-          sx={{
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            '&:hover': {
-              backgroundColor: '#1976d2',
-              boxShadow: '0 6px 8px rgba(0,0,0,0.15)'
-            }
-          }}
-        >
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={openPopup}>
           Add New Company
         </Button>
       </Box>
 
-      <Grid container spacing={4}>
+      <Grid container spacing={3}>
         {companies?.map((company, index) => (
+
           <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card 
-              sx={{ 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column',
-                transition: 'transform 0.3s ease',
-                '&:hover': {
-                  transform: 'scale(1.02)',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
-                }
-              }}
-              elevation={4}
-            >
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Typography 
-                  variant="h5" 
-                  gutterBottom 
-                  sx={{ 
-                    fontWeight: 'bold', 
-                    color: '#2c3e50',
-                    borderBottom: '2px solid #3498db',
-                    pb: 1
-                  }}
-                >
+            <Card>
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
                   {company.company_name}
                 </Typography>
 
@@ -354,41 +292,38 @@ const ManageCompanies = () => {
                   <strong>Role:</strong> {company.role}
                 </Typography>
 
-                <Typography 
-                  sx={{ mb: 1.5 }} 
-                  color="text.secondary"
-                >
-                  <strong>Eligible Branches:</strong> {company.eligible_branch.join(" / ")}
+                <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                  Eligible Branches: {company.eligible_branch.join(" / ")}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>CTC:</strong> ₹{Number(company.ctc).toLocaleString("en-IN")}
+                  CTC: ₹{Number(company.ctc).toLocaleString("en-IN")}
                 </Typography>
 
                 <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                  <strong>Location:</strong> {company.location.join(" / ")}
+                  Location: {company.location.join(" / ")}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>Deadline:{" "}</strong>
+                  Deadline:{" "}
                   {moment(company.deadline).format("hh:mm A DD-MM-YYYY")}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>Academic Eligiblity:</strong>
+                  Academic Eligiblity:
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>• 10th:</strong> {company.tenth_percentage}%
+                  • 10th: {company.tenth_percentage}%
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>• 12th:</strong> {company.twelfth_percentage}% or Diploma CGPA:{" "}
+                  • 12th: {company.twelfth_percentage}% or Diploma CGPA:{" "}
                   {company.diploma_cgpa}
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  <strong>• UG CGPA:</strong> {company.ug_cgpa}
+                  • UG CGPA: {company.ug_cgpa}
                 </Typography>
 
                 {company.description && (
@@ -458,6 +393,14 @@ const ManageCompanies = () => {
                 >
                   Import Data
                 </Button>
+
+                <Button onClick={() => handleExport(company)}>
+                  Export Data
+                </Button>
+
+                <IconButton onClick={() => setCompanies(companies.filter((_, i) => i !== index))}>
+                  <DeleteIcon />
+                </IconButton>
               </CardActions>
             </Card>
           </Grid>
