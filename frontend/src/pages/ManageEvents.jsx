@@ -174,13 +174,21 @@ const ManageEvents = () => {
   ) : (
     <Box sx={{ p: 3, backgroundColor: '#f5f5f5' }}>
       <Box sx={{ 
+        // p: 4, 
+        m: 2, 
+        // backgroundColor: '#f9fafb', 
+        borderRadius: 3 
+      }}>
+        <Box sx={{ 
         display: "flex", 
         justifyContent: "space-between", 
-        alignItems: 'center', 
-        mb: 3 
+        alignItems: "center", 
+        mb: 4,
+        borderBottom: '2px solid #e0e0e0',
+        pb: 2
       }}>
         <Typography variant="h4" fontWeight="bold">
-          📅 Event Management
+           Event Management
         </Typography>
         <Button 
           variant="contained" 
@@ -188,11 +196,15 @@ const ManageEvents = () => {
           onClick={openPopup}
           sx={{ 
             backgroundColor: '#1976d2', 
-            '&:hover': { backgroundColor: '#115293' } 
+            '&:hover': {
+              backgroundColor: '#1976d2',
+              boxShadow: '0 6px 8px rgba(0,0,0,0.15)'
+            } 
           }}
         >
           Add New Event
         </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>

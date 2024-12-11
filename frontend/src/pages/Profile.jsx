@@ -215,7 +215,7 @@ function Profile() {
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
         {loading ? (
           <Typography variant="h6" color="primary" sx={{ p: 3 }}>
-            🔄 Fetching Profile...
+             Fetching Profile...
           </Typography>
         ) : (
           <Box sx={{ p: 3, backgroundColor: theme.palette.background.default }}>
@@ -585,10 +585,11 @@ function Profile() {
                 <Button
                   variant="contained"
                   color="primary"
-                  startIcon={<Edit />}
+                  // startIcon={<Edit />}
                   onClick={toggleEdit}
                 >
-                  Edit Profile
+                  {/* Edit Profile */}
+                  logout
                 </Button>
               )}
             </Box>
