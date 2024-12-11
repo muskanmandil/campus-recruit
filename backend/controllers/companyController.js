@@ -169,7 +169,7 @@ exports.exportData = async (req, res) => {
 exports.importData = async (req, res) => {
     const { role } = req.user;
     const file = req.file;
-    const finalSelects = req.body.finalSelects;
+    const finalSelects = req.body.finalSelects === 'true';
     const company_name = toSnakeCase(req.body.company_name);
 
     if (role === 'student') return res.status(403).json({ message: "Access denied, coordinators and admins only" });
@@ -186,6 +186,7 @@ exports.importData = async (req, res) => {
         const resultSet = await pool.query(`SELECT enrollment_no, status FROM ${company_name}`);
         const applications = resultSet.rows;
 
+
         if (finalSelects) {
             const updates = [];
             const deletions = [];
@@ -199,15 +200,21 @@ exports.importData = async (req, res) => {
                 }
             });
 
-            // Bulk update "Selected" status
+            // Bulk update "Selected" status in company-specific table
             if (updates.length > 0) {
                 await pool.query(
                     `UPDATE ${company_name} SET status = 'Selected' WHERE enrollment_no = ANY($1)`,
                     [updates]
                 );
+
+                // Update "Placed" status in students table
+                await pool.query(
+                    `UPDATE students SET status = 'Placed' WHERE enrollment_no = ANY($1)`,
+                    [updates]
+                );
             }
 
-            // Bulk delete unmatched rows
+            // Bulk delete unmatched rows in company-specific table
             if (deletions.length > 0) {
                 await pool.query(
                     `DELETE FROM ${company_name} WHERE enrollment_no = ANY($1)`,
@@ -215,7 +222,13 @@ exports.importData = async (req, res) => {
                 );
             }
 
-            return res.status(200).json({ message: "Final selections updated successfully." });
+            // Update "Completed" status in companies table
+            await pool.query(
+                `UPDATE companies SET status = 'Completed' WHERE company_name = $1`,
+                [req.body.company_name]
+            );
+
+            return res.status(200).json({ message: "Final selections updated successfully, and statuses synchronized." });
 
 
         } else {
@@ -230,7 +243,7 @@ exports.importData = async (req, res) => {
                 }
             });
 
-            // Execute updates
+            // Execute updates in company-specific table
             for (const update of updates) {
                 await pool.query(
                     `UPDATE ${company_name} SET status = $1 WHERE enrollment_no = $2`,
